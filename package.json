@@ -1,0 +1,36 @@
+{
+  "name": "topcv",
+  "version": "1.0.0",
+  "description": "Dynamic form builder with Next.js CSR frontend and NestJS backend.",
+  "private": true,
+  "packageManager": "pnpm@10.33.2",
+  "workspaces": [
+    "be",
+    "fe",
+    "shared"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "dev:be": "pnpm --filter be dev",
+    "dev:fe": "pnpm --filter my-app dev",
+    "services:up": "docker compose up -d mongodb redis elasticsearch",
+    "services:down": "docker compose down",
+    "test": "pnpm test:shared && pnpm --filter be test && pnpm --filter my-app test",
+    "test:shared": "pnpm --filter @topcv/shared test",
+    "typecheck": "pnpm --filter @topcv/shared typecheck && pnpm --filter be typecheck && pnpm --filter my-app typecheck",
+    "lint": "pnpm --filter my-app lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dang232/TopCV.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/dang232/TopCV/issues"
+  },
+  "homepage": "https://github.com/dang232/TopCV#readme",
+  "dependencies": {}
+}
