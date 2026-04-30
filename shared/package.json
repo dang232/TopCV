@@ -1,0 +1,24 @@
+{
+  "name": "@topcv/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./forms": "./forms/index.ts",
+    "./transport": "./transport/index.ts",
+    "./user": "./user.schema.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5",
+    "vitest": "^4.0.0"
+  }
+}
