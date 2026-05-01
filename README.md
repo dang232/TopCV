@@ -13,7 +13,7 @@ This project implements a dynamic form builder system using **Next.js** and **Re
 ### Prerequisites
 - Node.js (LTS recommended, e.g. 20+)
 - pnpm 10+
-- Docker, for local MongoDB, Redis, and Elasticsearch services
+- Docker, for local MongoDB, Redis, Elasticsearch, and optional Keycloak (see `infrastructure/README.md`)
 
 ### Setup
 1. Clone the repository:
@@ -29,6 +29,7 @@ This project implements a dynamic form builder system using **Next.js** and **Re
    ```bash
    pnpm services:up
    ```
+   This starts MongoDB, Redis, Elasticsearch, PostgreSQL for Keycloak, and Keycloak on `http://localhost:8080` (realm `topcv`, import from `infrastructure/keycloak/`). Copy `KEYCLOAK_*` values from `be/.env.example` when testing JWT auth. Operational detail: `infrastructure/README.md`.
 4. Run the backend and frontend in separate terminals:
    ```bash
    pnpm dev:be
@@ -50,7 +51,7 @@ pnpm lint
 - **Frontend** (`fe/`): **Next.js 16.2.4**, **React 19.2.4**, **TypeScript**—**client-side rendering** is the primary mode for the builder experience.
 - **Shared** (`shared/`): **Zod ^4.4.1** contracts for forms, submissions, and user schema.
 - **Backend** (`be/`): **NestJS ^11.1.19** with DDD-style form modules and **oRPC** endpoint at `/rpc`.
-- **Database/Search/Cache**: **MongoDB + MikroORM**, **Redis**, and **Elasticsearch** via `docker-compose.yml`.
+- **Database/Search/Cache/Auth**: **MongoDB + MikroORM**, **Redis**, **Elasticsearch**, and optional **Keycloak** (realm import) via `docker-compose.yml`.
 
 ## Documentation
 Further documentation lives under `documentation/`. For coding standards, see **Coding Style Guidelines** in `documentation/project_scope/`. For forms **oRPC errors**, layering, and env vars, see **Forms_ORPC_Error_Handling.md** in the same folder.
