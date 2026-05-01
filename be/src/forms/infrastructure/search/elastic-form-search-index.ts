@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { FormSearchIndex } from '../../application/ports/form.search-index';
-import type { DynamicForm } from '../../domain/form.aggregate';
+import type { FormSnapshot } from '../../domain/form-snapshot';
 
 export type ElasticFormClient = {
   index(args: ElasticIndexRequest): Promise<ElasticWriteResult>;
@@ -57,8 +57,7 @@ export class ElasticFormSearchIndex implements FormSearchIndex {
 
   constructor(private readonly client: ElasticFormClient) {}
 
-  async index(form: DynamicForm): Promise<void> {
-    const snapshot = form.toSnapshot();
+  async index(snapshot: FormSnapshot): Promise<void> {
     const document: FormSearchDocument = {
       id: snapshot.id,
       title: snapshot.title,
@@ -76,10 +75,22 @@ export class ElasticFormSearchIndex implements FormSearchIndex {
   }
 
   async remove(id: string): Promise<void> {
-    await this.client.delete({
-      index: this.indexName,
-      id,
-    });
+    try {
+      await this.client.delete({
+        index: this.indexName,
+        id,
+      });
+    } catch (error) {
+      const statusCode = (error as { meta?: { statusCode?: number }; statusCode?: number } | null | undefined)?.meta
+        ?.statusCode ?? (error as { statusCode?: number } | null | undefined)?.statusCode;
+
+      // Elasticsearch returns 404 when the document doesn't exist. Deleting a form should be idempotent.
+      if (statusCode === 404) {
+        return;
+      }
+
+      throw error;
+    }
   }
 
   async search(query: string): Promise<string[]> {

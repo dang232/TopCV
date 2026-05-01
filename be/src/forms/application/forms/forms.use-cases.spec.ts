@@ -11,6 +11,7 @@ import { DeleteFormUseCase } from './delete-form.use-case';
 import { GetActiveFormsUseCase } from './get-active-forms.use-case';
 import { GetFormUseCase } from './get-form.use-case';
 import { ListFormsUseCase } from './list-forms.use-case';
+import { ListFormsPageUseCase } from './list-forms-page.use-case';
 import { SearchFormsUseCase } from './search-forms.use-case';
 import { UpdateFormUseCase } from './update-form.use-case';
 
@@ -32,7 +33,15 @@ function makeDeps(forms: DynamicForm[] = []) {
   const repository: FormRepository = {
     save: vi.fn(async (form) => form),
     findAll: vi.fn(async () => forms),
+    countAll: vi.fn(async () => forms.length),
+    findPage: vi.fn(async ({ skip, take }: { skip: number; take: number }) => forms.slice(skip, skip + take)),
     findById: vi.fn(async (id) => forms.find((form) => form.toSnapshot().id === id) ?? null),
+    findByIds: vi.fn(async (ids: string[]) =>
+      ids.flatMap((id: string) => {
+        const found = forms.find((form) => form.toSnapshot().id === id);
+        return found ? [found] : [];
+      }),
+    ),
     delete: vi.fn(),
   };
   const cache: FormCache = {
@@ -59,6 +68,19 @@ describe('form use cases', () => {
 
     expect(cache.get).toHaveBeenCalledWith('forms:list');
     expect(cache.set).toHaveBeenCalledWith('forms:list', [FormDtoMapper.toDto(form)], 60);
+  });
+
+  it('lists forms with pagination metadata', async () => {
+    const forms = [makeForm('a'), makeForm('b'), makeForm('c')];
+    const { repository } = makeDeps(forms);
+    const useCase = new ListFormsPageUseCase(repository);
+
+    await expect(useCase.execute({ page: 2, pageSize: 2 })).resolves.toEqual({
+      items: [FormDtoMapper.toDto(forms[2])],
+      total: 3,
+      page: 2,
+      pageSize: 2,
+    });
   });
 
   it('gets one form through a read-through cache', async () => {

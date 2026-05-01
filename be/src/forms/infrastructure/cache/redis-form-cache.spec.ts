@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { FormCacheKeys } from '../../application/cache-keys/form-cache-keys';
 import { RedisFormCache, type RedisCacheClient } from './redis-form-cache';
 
 type RedisSetCall = [key: string, value: string, mode: 'EX', ttlSeconds: number];
@@ -29,8 +30,8 @@ describe('RedisFormCache', () => {
   });
 
   it('builds stable cache keys', () => {
-    expect(RedisFormCache.keys.list()).toBe('forms:list');
-    expect(RedisFormCache.keys.active()).toBe('forms:active');
-    expect(RedisFormCache.keys.byId('form-1')).toBe('forms:by-id:form-1');
+    expect(FormCacheKeys.list()).toBe('forms:list');
+    expect(FormCacheKeys.active()).toBe('forms:active');
+    expect(FormCacheKeys.byId('form-1')).toBe('forms:by-id:form-1');
   });
 });

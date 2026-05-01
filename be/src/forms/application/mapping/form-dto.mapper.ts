@@ -14,14 +14,14 @@ export class FormDtoMapper {
       description: snapshot.description,
       order: snapshot.order,
       status: snapshot.status,
-      fields: snapshot.fields.map((field) => ({ ...field })) as ContractFormField[],
+      fields: snapshot.fields.map((field) => ({ ...field })),
       createdAt: snapshot.createdAt.toISOString(),
       updatedAt: snapshot.updatedAt.toISOString(),
     };
   }
 
   static toDomainFields(fields: ContractFormField[]): FormField[] {
-    return fields.map((field) => ({ ...field })) as FormField[];
+    return fields.map((field) => ({ ...field }));
   }
 
   static restore(dto: FormDto): DynamicForm {

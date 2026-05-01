@@ -1,28 +1,29 @@
 # Dynamic Form Builder Documentation
 
 ## Overview
-This documentation covers the integration of the frontend and backend of the Dynamic Form Builder project using oRPC and Zod.
+This documentation covers the integration of the **Next.js frontend** (`fe/`) and **NestJS backend** (`be/`) using **oRPC** and shared contracts from `@topcv/shared`.
 
 ## Features
-- **User Data Validation**: Utilizes shared Zod schemas for user data validation across frontend and backend.
-- **oRPC Communication**: Facilitates seamless communication between the Next.js frontend and Nest.js backend.
+- **Contract-first transport**: request/response shapes are shared via schemas/types in `@topcv/shared`.
+- **oRPC communication**: typed client/server RPC to keep FE/BE aligned.
+- **Keycloak authentication (required)**: login/register/logout via Keycloak (OIDC), with RBAC (`admin`, `staff`) enforced server-side.
 
 ## Setup Instructions
 ### Environment Setup
-1. Install Node.js and Nest.js globally if not already installed.
+1. Install Node.js (prefer project-managed scripts over global installs).
 
 ### Installation
 1. Clone the repository.
 2. Navigate to the project directory.
-3. Run:
-   ```bash
-   npm install zod
-   ```
-4. Add any additional libraries, including oRPC if available.
+3. Install dependencies using the repo package manager (e.g. `pnpm install` if configured).
 
 ## Testing
-- **Unit Tests**: Located in `fe/tests/userSchema.test.ts` for validating shared Zod schemas.
-- **Integration Tests**: Found in `fe/tests/integration.test.ts` to ensure communication between frontend/backend functions correctly.
+- **Frontend tests**: colocated near features (e.g. `fe/src/features/**`).
+- **Backend tests**: colocated near modules/use-cases (e.g. `be/src/**`).
 
 ### Documentation Updates
-Ensure this documentation is updated with any feature additions or significant changes made in the project.
+Keep this doc aligned with:
+
+- **Auth**: Keycloak realm/client settings used by the app, and how FE/BE validate sessions/tokens.
+- **RBAC**: which routes/features require `admin` vs `staff`.
+- **Transport**: where oRPC routers live on FE and BE, and which parts of `@topcv/shared` are considered stable contracts.

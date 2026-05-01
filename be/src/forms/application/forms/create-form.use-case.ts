@@ -2,7 +2,7 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import { CreateFormInputSchema, type CreateFormInput, type FormDto } from '@topcv/shared/forms';
 
 import { DynamicForm } from '../../domain/form.aggregate';
-import { RedisFormCache } from '../../infrastructure/cache/redis-form-cache';
+import { FormCacheKeys } from '../cache-keys/form-cache-keys';
 import { FormDtoMapper } from '../mapping/form-dto.mapper';
 import { FORM_CACHE, type FormCache } from '../ports/form.cache';
 import { FORM_REPOSITORY, type FormRepository } from '../ports/form.repository';
@@ -37,8 +37,8 @@ export class CreateFormUseCase {
     const form = DynamicForm.create(formId, { ...parsed, fields: FormDtoMapper.toDomainFields(fields) }, this.clock());
     const saved = await this.repository.save(form);
 
-    await this.cache.delete(RedisFormCache.keys.list(), RedisFormCache.keys.active());
-    await this.searchIndex.index(saved);
+    await this.cache.delete(FormCacheKeys.list(), FormCacheKeys.active());
+    await this.searchIndex.index(saved.toSnapshot());
 
     return FormDtoMapper.toDto(saved);
   }
