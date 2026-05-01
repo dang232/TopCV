@@ -2,13 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { KeycloakAuthService } from './keycloak-auth.service';
 import { InvalidRoleError, KeycloakConflictError, KeycloakForbiddenError, KeycloakUnreachableError, MisconfigError } from './keycloak-auth.errors';
-
-function jsonResponse(body: unknown, init?: { status?: number; headers?: Record<string, string> }) {
-  return new Response(JSON.stringify(body), {
-    status: init?.status ?? 200,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-  });
-}
+import { jsonResponse, textResponse } from '../../shared/testing/http';
 
 describe(KeycloakAuthService.name, () => {
   const prevEnv = { ...process.env };
@@ -61,7 +55,7 @@ describe(KeycloakAuthService.name, () => {
       if (url.endsWith('/admin/realms/topcv/users/u1/role-mappings/realm')) {
         return new Response(null, { status: 204 });
       }
-      return new Response('not found', { status: 404 });
+      return textResponse('not found', { status: 404 });
     });
 
     vi.stubGlobal('fetch', fetchMock);
@@ -128,8 +122,8 @@ describe(KeycloakAuthService.name, () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
       if (url.endsWith('/protocol/openid-connect/token')) return jsonResponse({ access_token: 'admin-token' });
-      if (url.endsWith('/admin/realms/topcv/users')) return new Response('exists', { status: 409 });
-      return new Response('not found', { status: 404 });
+      if (url.endsWith('/admin/realms/topcv/users')) return textResponse('exists', { status: 409 });
+      return textResponse('not found', { status: 404 });
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -155,8 +149,8 @@ describe(KeycloakAuthService.name, () => {
         return new Response(null, { status: 204 });
       }
       if (url.endsWith('/admin/realms/topcv/users/u1/reset-password')) return new Response(null, { status: 204 });
-      if (url.endsWith('/admin/realms/topcv/roles/staff')) return new Response('missing role', { status: 404 });
-      return new Response('not found', { status: 404 });
+      if (url.endsWith('/admin/realms/topcv/roles/staff')) return textResponse('missing role', { status: 404 });
+      return textResponse('not found', { status: 404 });
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -204,12 +198,12 @@ describe(KeycloakAuthService.name, () => {
         return jsonResponse({ id: 'r1', name: 'staff' });
       }
       if (url.endsWith('/admin/realms/topcv/users/u1/role-mappings/realm')) {
-        return new Response('forbidden', { status: 403 });
+        return textResponse('forbidden', { status: 403 });
       }
       if (url.endsWith('/admin/realms/topcv/users/u1') && (init?.method ?? 'GET').toUpperCase() === 'DELETE') {
         return new Response(null, { status: 204 });
       }
-      return new Response('not found', { status: 404 });
+      return textResponse('not found', { status: 404 });
     });
 
     vi.stubGlobal('fetch', fetchMock);
@@ -280,7 +274,7 @@ describe(KeycloakAuthService.name, () => {
       if (url.endsWith('/admin/realms/topcv/roles/staff')) return jsonResponse({ id: 'r1', name: 'staff' });
       if (url.endsWith('/admin/realms/topcv/users/u1/role-mappings/realm')) return new Response(null, { status: 204 });
       if (url.endsWith('/admin/realms/topcv/users/u1') && method === 'DELETE') return new Response(null, { status: 204 });
-      return new Response('not found', { status: 404 });
+      return textResponse('not found', { status: 404 });
     });
     vi.stubGlobal('fetch', fetchMock);
 
