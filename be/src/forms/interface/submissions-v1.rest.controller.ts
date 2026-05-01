@@ -16,10 +16,12 @@ export class SubmissionsV1RestController {
 
   constructor(@Inject(ListSubmissionsUseCase) private readonly listSubmissions: ListSubmissionsUseCase) {}
 
-  private run<T>(procedure: string, fn: () => Promise<T>): Promise<T> {
-    return fn().catch((error: unknown) => {
+  private async run<T>(procedure: string, fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (error: unknown) {
       rethrowFormsRest(error, procedure, this.logger);
-    });
+    }
   }
 
   @Get()

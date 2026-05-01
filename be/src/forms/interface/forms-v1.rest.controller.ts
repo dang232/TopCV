@@ -58,10 +58,12 @@ export class FormsV1RestController {
     @Inject(SubmitFormUseCase) private readonly submitForm: SubmitFormUseCase,
   ) {}
 
-  private run<T>(procedure: string, fn: () => Promise<T>): Promise<T> {
-    return fn().catch((error: unknown) => {
+  private async run<T>(procedure: string, fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (error: unknown) {
       rethrowFormsRest(error, procedure, this.logger);
-    });
+    }
   }
 
   @Get()
