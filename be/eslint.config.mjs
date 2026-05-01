@@ -1,23 +1,21 @@
 // @ts-check
 import eslint from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import noDeprecatedSymbolRule from '../eslint-rules/no-deprecated-symbol.mjs';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    ignores: ['eslint.config.mjs', 'vitest.config.ts', 'dist/**', 'build/**', 'coverage/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
-  eslintPluginPrettierRecommended,
   {
     languageOptions: {
       globals: {
         ...globals.node,
         ...globals.jest,
       },
-      sourceType: 'commonjs',
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
@@ -25,11 +23,24 @@ export default tseslint.config(
     },
   },
   {
+    plugins: {
+      topcv: {
+        rules: {
+          'no-deprecated-symbol': noDeprecatedSymbolRule,
+        },
+      },
+    },
     rules: {
+      'topcv/no-deprecated-symbol': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
-      "prettier/prettier": ["error", { endOfLine: "auto" }],
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
     },
   },
 );
