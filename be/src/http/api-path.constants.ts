@@ -9,3 +9,4 @@ export const HTTP_API_V1_ROOT_PATH = `${HTTP_API_SEGMENT}/${HTTP_API_VERSION_V1_
 
 export const HTTP_API_V1_FORMS_PATH = `${HTTP_API_V1_ROOT_PATH}/forms` as const;
 export const HTTP_API_V1_SUBMISSIONS_PATH = `${HTTP_API_V1_ROOT_PATH}/submissions` as const;
+export const HTTP_API_V1_AUTH_PATH = `${HTTP_API_V1_ROOT_PATH}/auth` as const;
