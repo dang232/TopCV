@@ -16,28 +16,26 @@ export class HealthController {
 
   @Get()
   async check() {
-    let mongoOk = false;
-    try {
+    const probe = async (fn: () => Promise<boolean>) => {
+      try {
+        return await fn();
+      } catch {
+        // Ignore health probe failure.
+        return false;
+      }
+    };
+
+    const mongoOk = await probe(async () => {
       const mongoCheck = await this.orm.checkConnection();
-      mongoOk = mongoCheck.ok;
-    } catch {
-      mongoOk = false;
-    }
+      return mongoCheck.ok;
+    });
 
-    let redisOk = false;
-    try {
-      redisOk = (await this.redis.ping()) === 'PONG';
-    } catch {
-      redisOk = false;
-    }
+    const redisOk = await probe(async () => (await this.redis.ping()) === 'PONG');
 
-    let elasticsearchOk = false;
-    try {
+    const elasticsearchOk = await probe(async () => {
       const elasticsearch = await this.elasticsearch.info();
-      elasticsearchOk = Boolean(elasticsearch);
-    } catch {
-      elasticsearchOk = false;
-    }
+      return Boolean(elasticsearch);
+    });
 
     return {
       status: mongoOk && redisOk && elasticsearchOk ? 'ok' : 'degraded',

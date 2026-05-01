@@ -2,7 +2,7 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import { UpdateFormInputSchema, type FormDto, type UpdateFormInput } from '@topcv/shared/forms';
 
 import { FormNotFound } from '../../domain/errors/form-not-found';
-import { RedisFormCache } from '../../infrastructure/cache/redis-form-cache';
+import { FormCacheKeys } from '../cache-keys/form-cache-keys';
 import { FormDtoMapper } from '../mapping/form-dto.mapper';
 import { FORM_CACHE, type FormCache } from '../ports/form.cache';
 import { FORM_REPOSITORY, type FormRepository } from '../ports/form.repository';
@@ -41,7 +41,7 @@ export class UpdateFormUseCase {
     );
     const saved = await this.repository.save(form);
 
-    await this.cache.delete(RedisFormCache.keys.list(), RedisFormCache.keys.active(), RedisFormCache.keys.byId(id));
+    await this.cache.delete(FormCacheKeys.list(), FormCacheKeys.active(), FormCacheKeys.byId(id));
     await this.searchIndex.index(saved);
 
     return FormDtoMapper.toDto(saved);
