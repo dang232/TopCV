@@ -1,4 +1,60 @@
-# Dynamic Form Builder System Requirements
+# Dynamic Form Builder System 
+
+## 0. Scope Update (TopCV implementation)
+
+This repo is implemented as a **NestJS backend** (`be/`) + **Next.js frontend** (`fe/`) integrated via **oRPC** (typed contracts / schemas via `@topcv/shared`).
+
+### 0.1. Authentication (Required: Keycloak)
+
+- **Identity provider**: Keycloak (OIDC).
+- **User flows**:
+  - **Login**: redirect / PKCE flow handled by frontend, session established via tokens.
+  - **Register**: supported via Keycloak (self-registration or admin-created users, depending on realm settings).
+  - **Logout**: terminate local session and Keycloak session.
+- **Token handling (high-level)**:
+  - Frontend stores the **minimum necessary** (prefer server-side session or httpOnly cookie; avoid long-lived access tokens in localStorage).
+  - Backend validates **access tokens** on protected requests (JWT verification using Keycloak JWKS).
+  - Token refresh strategy must be defined (refresh token rotation if used, or re-auth via Keycloak).
+
+### 0.2. Authorization (Roles)
+
+Role-based access control is required.
+
+- **Roles**:
+  - **admin**: manage forms (CRUD), manage fields, view submissions, access admin dashboard.
+  - **staff**: view active forms, submit forms, view own submissions (if supported).
+- **Enforcement**:
+  - Backend is the **source of truth** for authorization.
+  - Frontend may hide UI affordances, but must not be relied on for security.
+
+### 0.3. Protected routes (Frontend + Backend)
+
+- **Frontend**:
+  - **Public**: `/login`, `/register` (or `/auth/*`), and any marketing / landing routes if present.
+  - **Protected**:
+    - **Staff**: forms list, form submit, submissions history.
+    - **Admin**: form management pages + admin dashboard.
+  - Route protection can be enforced using Next.js middleware and/or server components that require a valid session.
+- **Backend**:
+  - Protect oRPC/HTTP handlers with an auth guard that:
+    - validates token signature/issuer/audience,
+    - maps token claims → app roles (admin/staff),
+    - rejects with consistent transport errors.
+
+### 0.4. Dashboard (Wireframe + expectations)
+
+Provide a simple dashboard that helps each role navigate and understand system state.
+
+- **Admin dashboard** (example sections):
+  - **At-a-glance stats**: total forms, active forms, draft forms, total submissions (and last 24h/7d if available).
+  - **Recent activity**: latest submissions, recently created/updated forms.
+  - **Quick actions**: create form, search forms, jump to submissions.
+- **Staff dashboard** (example sections):
+  - **Next actions**: active forms to fill (ordered), drafts hidden.
+  - **My recent submissions**: last submitted forms + status.
+  - **Profile / session**: current role, logout.
+
+> Note: The remainder of this document is the original functional specification for the form builder. The Keycloak + roles + dashboard scope above is the required product framing for this codebase.
 
 ## 1. Tổng Quan
 Bạn sẽ xây dựng một hệ thống quản lý form đơn giản, cho phép admin tạo các form với nhiều loại trường dữ liệu khác nhau (text, date, color...), và nhân viên SW có thể điền vào các form đó theo đúng thứ tự. Chúng tôi muốn đánh giá:  

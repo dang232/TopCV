@@ -9,12 +9,6 @@ export type RedisCacheClient = {
 
 @Injectable()
 export class RedisFormCache implements FormCache {
-  static readonly keys = {
-    list: () => 'forms:list',
-    active: () => 'forms:active',
-    byId: (id: string) => `forms:by-id:${id}`,
-  };
-
   constructor(private readonly redis: RedisCacheClient) {}
 
   async get<T>(key: string): Promise<T | null> {

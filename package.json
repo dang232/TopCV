@@ -18,7 +18,7 @@
     "test": "pnpm test:shared && pnpm --filter be test && pnpm --filter my-app test",
     "test:shared": "pnpm --filter @topcv/shared test",
     "typecheck": "pnpm --filter @topcv/shared typecheck && pnpm --filter be typecheck && pnpm --filter my-app typecheck",
-    "lint": "pnpm --filter my-app lint"
+    "lint": "pnpm --filter my-app lint && pnpm --filter be lint"
   },
   "repository": {
     "type": "git",

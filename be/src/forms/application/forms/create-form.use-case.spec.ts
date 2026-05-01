@@ -11,7 +11,10 @@ describe('CreateFormUseCase', () => {
     const repository: FormRepository = {
       save: vi.fn(async (form) => form),
       findAll: vi.fn(),
+      countAll: vi.fn(async () => 0),
+      findPage: vi.fn(async () => []),
       findById: vi.fn(),
+      findByIds: vi.fn(),
       delete: vi.fn(),
     };
     const cache: FormCache = {

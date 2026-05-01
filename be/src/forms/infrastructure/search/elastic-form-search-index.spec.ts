@@ -25,7 +25,7 @@ describe('ElasticFormSearchIndex', () => {
       fields: [{ id: 'name', label: 'Employee name', type: FieldType.Text, order: 0, required: true }],
     });
 
-    await search.index(form);
+    await search.index(form.toSnapshot());
 
     expect(indexed).toEqual([
       {
