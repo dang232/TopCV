@@ -14,6 +14,7 @@ The `keycloak` service uses PostgreSQL (`keycloak-db`) and imports the dev realm
 
 - Issuer: `http://localhost:8080/realms/topcv`
 - Public client: `topcv-api` (authorization code + direct access grants for local testing).
+- Registration: enabled (dev-only) so the FE `/register` flow can open the Keycloak sign-up screen.
 - Roles: realm roles `admin`, `staff`; same names as **client roles** on `topcv-api`. The Nest verifier merges `realm_access.roles` with `resource_access["topcv-api"].roles` when `KEYCLOAK_CLIENT_ID=topcv-api`.
 - Sample users (passwords are dev-only; rotate or delete outside localhost):
 
