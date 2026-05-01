@@ -1,0 +1,93 @@
+{
+  "realm": "topcv",
+  "enabled": true,
+  "displayName": "TopCV (local dev)",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "admin", "description": "TopCV realm admin" },
+      { "name": "staff", "description": "TopCV realm staff" },
+      { "name": "offline_access" },
+      { "name": "uma_authorization" }
+    ],
+    "client": {
+      "topcv-api": [
+        { "name": "admin", "description": "topcv-api client admin" },
+        { "name": "staff", "description": "topcv-api client staff" }
+      ]
+    }
+  },
+  "clients": [
+    {
+      "clientId": "topcv-api",
+      "name": "topcv-api",
+      "description": "Public OIDC client for Next.js / API JWT (dev)",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:3001/*",
+        "http://127.0.0.1:3000/*",
+        "http://127.0.0.1:3001/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "dev-admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "dev-admin@example.test",
+      "firstName": "Dev",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin", "offline_access", "uma_authorization"],
+      "clientRoles": {
+        "topcv-api": ["admin"]
+      }
+    },
+    {
+      "username": "dev-staff",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "dev-staff@example.test",
+      "firstName": "Dev",
+      "lastName": "Staff",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-staff",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["staff", "offline_access", "uma_authorization"],
+      "clientRoles": {
+        "topcv-api": ["staff"]
+      }
+    }
+  ]
+}
