@@ -23,7 +23,8 @@ function answerSchemaForField(field: FormField): z.ZodType<FormAnswerValue | und
       schema = z.string().max(200);
       break;
     case FieldType.Number:
-      schema = z.number().finite().min(0).max(100);
+      // Zod v4 numbers are finite by default (NaN/±Infinity are rejected).
+      schema = z.number().min(0).max(100);
       break;
     case FieldType.Date:
       schema = z.string().refine((value) => !isPastDate(value), 'Date cannot be in the past');
