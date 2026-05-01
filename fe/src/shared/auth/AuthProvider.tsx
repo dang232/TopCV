@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useMemo, useSyncExternalStore } from 'react';
+import { TOPCV_REALM_ROLES } from '@topcv/shared/auth';
 
 import { clearStoredSession, readStoredSession, subscribeToSession, writeStoredSession, type AuthSession } from './authStore';
 import { ApiHttpError, apiFetchJson } from '@/src/shared/api/http/apiClient';
@@ -83,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               username: input.username,
               email: input.email,
               password: input.password,
-              role: 'staff',
+              role: TOPCV_REALM_ROLES[1],
             },
           });
         } catch (err) {
