@@ -7,11 +7,13 @@ import { HealthModule } from './health/health.module';
 import { ExternalClientsModule } from './infra/external-clients.module';
 import { FormEntitySchema } from './forms/infrastructure/persistence/form.entity';
 import { SubmissionEntitySchema } from './forms/infrastructure/persistence/submission.entity';
+import { AuthRestModule } from './auth/auth-rest.module';
 
 @Module({
   imports: [
     DatabaseModule.forRoot([FormEntitySchema, SubmissionEntitySchema]),
     ExternalClientsModule,
+    AuthRestModule,
     FormsModule,
     HealthModule,
   ],

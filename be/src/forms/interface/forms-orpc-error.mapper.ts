@@ -5,6 +5,7 @@ import { OrpcCommonErrorCode } from '@topcv/shared';
 import { z } from 'zod';
 
 import { FormNotFound } from '../domain/errors/form-not-found';
+import { logErrorDev } from '../../shared/logging/logger';
 
 /** Known domain/application failures → wire-safe oRPC errors (interface / adapter concern). */
 export function mapFormsFailureToOrpc(error: unknown): ORPCError<string, unknown> | undefined {
@@ -61,7 +62,9 @@ export function mapUnhandledFormsProcedureFailure(
   logger: Pick<Logger, 'error'>,
 ): ORPCError<string, unknown> {
   const detail = error instanceof Error ? error.message : String(error);
-  logger.error(`${procedure}: ${detail}`, error instanceof Error ? error.stack : undefined);
+  // Keep prod logs minimal; emit stack/meta only in dev.
+  logger.error(`${procedure}: ${detail}`);
+  logErrorDev(`[forms] ${procedure} failed`, { detail }, error);
 
   const expose = process.env.NODE_ENV !== 'production';
 
@@ -69,6 +72,6 @@ export function mapUnhandledFormsProcedureFailure(
     status: 500,
     message: expose ? detail : 'Internal server error',
     defined: expose,
-    cause: error instanceof Error ? error : undefined,
+    cause: expose && error instanceof Error ? error : undefined,
   });
 }
