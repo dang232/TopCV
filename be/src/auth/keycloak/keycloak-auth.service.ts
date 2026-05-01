@@ -9,6 +9,7 @@ import {
   KeycloakUnreachableError,
   MisconfigError,
 } from './keycloak-auth.errors';
+import type { KeycloakRealmRole } from './keycloak.types';
 
 type KeycloakTokenResponse = {
   access_token: string;
@@ -335,7 +336,12 @@ export class KeycloakAuthService {
     }
   }
 
-  async registerUser(input: { username: string; email: string; password: string; role: 'admin' | 'staff' }): Promise<{ userId: string }> {
+  async registerUser(input: {
+    username: string;
+    email: string;
+    password: string;
+    role: KeycloakRealmRole;
+  }): Promise<{ userId: string }> {
     const adminToken = await this.getAdminAccessToken();
     const userId = await this.createUser(adminToken, { username: input.username, email: input.email });
     try {
