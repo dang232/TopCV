@@ -38,7 +38,7 @@ export class CreateFormUseCase {
     const saved = await this.repository.save(form);
 
     await this.cache.delete(FormCacheKeys.list(), FormCacheKeys.active());
-    await this.searchIndex.index(saved);
+    await this.searchIndex.index(saved.toSnapshot());
 
     return FormDtoMapper.toDto(saved);
   }
