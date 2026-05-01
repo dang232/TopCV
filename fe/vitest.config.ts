@@ -13,11 +13,14 @@ export default defineConfig({
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
   },
   resolve: {
-    alias: {
-      '@': fromRoot('.'),
-      '@topcv/shared': fromRoot('../shared/index.ts'),
-      '@topcv/shared/forms': fromRoot('../shared/forms/index.ts'),
-      '@topcv/shared/user': fromRoot('../shared/user.schema.ts'),
-    },
+    // Use an ordered alias array so subpath matches win over the base package alias.
+    alias: [
+      { find: '@', replacement: fromRoot('.') },
+      { find: '@topcv/shared/auth', replacement: fromRoot('../shared/auth/index.ts') },
+      { find: '@topcv/shared/forms', replacement: fromRoot('../shared/forms/index.ts') },
+      { find: '@topcv/shared/transport', replacement: fromRoot('../shared/transport/index.ts') },
+      { find: '@topcv/shared/user', replacement: fromRoot('../shared/user.schema.ts') },
+      { find: '@topcv/shared', replacement: fromRoot('../shared/index.ts') },
+    ],
   },
 });

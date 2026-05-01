@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@topcv/shared": ["../shared/index.ts"]
+      "@topcv/shared": ["../shared/index.ts"],
+      "@topcv/shared/*": ["../shared/*"]
     }
   },
   "include": [
