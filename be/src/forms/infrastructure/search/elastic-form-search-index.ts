@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { FormSearchIndex } from '../../application/ports/form.search-index';
-import type { DynamicForm } from '../../domain/form.aggregate';
+import type { FormSnapshot } from '../../domain/form-snapshot';
 
 export type ElasticFormClient = {
   index(args: ElasticIndexRequest): Promise<ElasticWriteResult>;
@@ -57,8 +57,7 @@ export class ElasticFormSearchIndex implements FormSearchIndex {
 
   constructor(private readonly client: ElasticFormClient) {}
 
-  async index(form: DynamicForm): Promise<void> {
-    const snapshot = form.toSnapshot();
+  async index(snapshot: FormSnapshot): Promise<void> {
     const document: FormSearchDocument = {
       id: snapshot.id,
       title: snapshot.title,

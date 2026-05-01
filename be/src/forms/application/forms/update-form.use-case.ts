@@ -42,7 +42,7 @@ export class UpdateFormUseCase {
     const saved = await this.repository.save(form);
 
     await this.cache.delete(FormCacheKeys.list(), FormCacheKeys.active(), FormCacheKeys.byId(id));
-    await this.searchIndex.index(saved);
+    await this.searchIndex.index(saved.toSnapshot());
 
     return FormDtoMapper.toDto(saved);
   }
