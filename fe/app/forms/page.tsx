@@ -1,5 +1,10 @@
 import { FormsPageClient } from '@/src/features/forms';
+import { RequireAuth } from '@/src/shared/auth';
 
 export default function FormsPage() {
-  return <FormsPageClient />;
+  return (
+    <RequireAuth>
+      <FormsPageClient />
+    </RequireAuth>
+  );
 }

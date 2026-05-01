@@ -11,6 +11,7 @@ import type { CreateFormDraft } from '../model/draftTypes';
 import { formsApi } from '../api/formsApi';
 import type { FormsRepository } from '../repository/formsRepository';
 import { formsButtonOutline, formsButtonPrimary } from './formsButtonStyles';
+import { hasRole, useAuth } from '@/src/shared/auth';
 
 interface FormsPageClientProps {
   repo?: FormsRepository;
@@ -28,9 +29,12 @@ const emptyDraft: CreateFormDraft = {
 };
 
 export function FormsPageClient({ repo = formsApi }: FormsPageClientProps) {
+  const { roles } = useAuth();
+  const isAdmin = hasRole(roles, 'ADMIN');
   const [mode, setMode] = useState<'staff' | 'admin'>('staff');
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const controller = useFormsController({ repo, emptyDraft });
+  const effectiveMode: 'staff' | 'admin' = isAdmin ? mode : 'staff';
 
   useEffect(() => {
     void controller.setMode('staff');
@@ -55,7 +59,7 @@ export function FormsPageClient({ repo = formsApi }: FormsPageClientProps) {
           </div>
           <div className="flex gap-2">
             <button
-              className={`${mode === 'staff' ? formsButtonPrimary : formsButtonOutline} px-3 py-2`}
+              className={`${effectiveMode === 'staff' ? formsButtonPrimary : formsButtonOutline} px-3 py-2`}
               onClick={() => {
                 setMode('staff');
                 void controller.setMode('staff');
@@ -63,20 +67,22 @@ export function FormsPageClient({ repo = formsApi }: FormsPageClientProps) {
             >
               Staff view
             </button>
-            <button
-              className={`${mode === 'admin' ? formsButtonPrimary : formsButtonOutline} px-3 py-2`}
-              onClick={() => {
-                setMode('admin');
-                void controller.setMode('admin');
-              }}
-            >
-              Admin view
-            </button>
+            {isAdmin ? (
+              <button
+                className={`${effectiveMode === 'admin' ? formsButtonPrimary : formsButtonOutline} px-3 py-2`}
+                onClick={() => {
+                  setMode('admin');
+                  void controller.setMode('admin');
+                }}
+              >
+                Admin view
+              </button>
+            ) : null}
           </div>
         </header>
 
-        <div className={`mt-8 grid gap-8 ${mode === 'admin' ? 'lg:grid-cols-[420px_1fr]' : ''}`}>
-          {mode === 'admin' ? (
+        <div className={`mt-8 grid gap-8 ${effectiveMode === 'admin' ? 'lg:grid-cols-[420px_1fr]' : ''}`}>
+          {effectiveMode === 'admin' ? (
             <CreateFormPanel
               draft={controller.draft}
               error={controller.error}
@@ -87,14 +93,14 @@ export function FormsPageClient({ repo = formsApi }: FormsPageClientProps) {
           ) : null}
 
           <FormsListPanel
-            mode={mode}
-            isAdminSearchMode={mode === 'admin' && adminSearchQuery.trim().length > 0}
+            mode={effectiveMode}
+            isAdminSearchMode={effectiveMode === 'admin' && adminSearchQuery.trim().length > 0}
             answers={controller.answers}
             forms={controller.forms}
             isSubmitting={controller.isSubmitting}
-            page={mode === 'admin' ? controller.adminListPage : undefined}
-            pageSize={mode === 'admin' ? controller.adminListPageSize : undefined}
-            total={mode === 'admin' ? controller.adminListTotal : undefined}
+            page={effectiveMode === 'admin' ? controller.adminListPage : undefined}
+            pageSize={effectiveMode === 'admin' ? controller.adminListPageSize : undefined}
+            total={effectiveMode === 'admin' ? controller.adminListTotal : undefined}
             onPrevPage={() => void controller.adminPrevPage()}
             onNextPage={() => void controller.adminNextPage()}
             submissions={controller.submissions}

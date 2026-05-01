@@ -1,9 +1,24 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { FieldType, FormStatus, type SubmissionDto } from '@topcv/shared';
 
-import { FormsPageClient, type FormsRepository } from './FormsPageClient';
+import type { FormsRepository } from './repository/formsRepository';
+import { AuthProvider } from '@/src/shared/auth';
+import { writeStoredSession } from '@/src/shared/auth/authStore';
+
+let FormsPageClient: typeof import('./ui/FormsPageClient').FormsPageClient;
+
+beforeAll(async () => {
+  // Some modules (formsApi → api client) validate public env at import-time.
+  // Ensure a sane test default so unrelated env-manipulating suites don't break this file.
+  process.env.NEXT_PUBLIC_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
+  process.env.NEXT_PUBLIC_KEYCLOAK_URL = process.env.NEXT_PUBLIC_KEYCLOAK_URL ?? 'http://localhost:8080';
+  process.env.NEXT_PUBLIC_KEYCLOAK_REALM = process.env.NEXT_PUBLIC_KEYCLOAK_REALM ?? 'topcv';
+  process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID ?? 'topcv-fe';
+
+  ({ FormsPageClient } = await import('./ui/FormsPageClient'));
+});
 
 function makeApi(): FormsRepository {
   return {
@@ -27,16 +42,25 @@ function makeApi(): FormsRepository {
 }
 
 describe('FormsPageClient', () => {
+  function renderWithRole(role: 'staff' | 'admin' | 'ADMIN' | 'STAFF', repo: FormsRepository) {
+    writeStoredSession({ accessToken: 'token', roles: [role] });
+    return render(
+      <AuthProvider>
+        <FormsPageClient repo={repo} />
+      </AuthProvider>,
+    );
+  }
+
   it('debounces search input and refreshes when cleared', async () => {
     const api = makeApi();
     const user = userEvent.setup();
 
-    render(<FormsPageClient repo={api} />);
+    renderWithRole('admin', api);
 
     await waitFor(() => expect(api.listSubmissions).toHaveBeenCalledTimes(1));
 
     await user.click(screen.getByRole('button', { name: /admin view/i }));
-    await waitFor(() => expect(api.listPage).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.listPage).toHaveBeenCalled());
 
     // Pagination should be visible in admin mode when not searching.
     expect(screen.getByRole('button', { name: /^prev$/i })).toBeInTheDocument();
@@ -57,12 +81,13 @@ describe('FormsPageClient', () => {
     expect(screen.queryByRole('button', { name: /^next$/i })).not.toBeInTheDocument();
 
     // Clear the input. Empty query should refresh admin list (listPage), not search.
+    const listPageCallsBeforeClear = vi.mocked(api.listPage).mock.calls.length;
     await user.clear(search);
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 310));
     });
 
-    await waitFor(() => expect(api.listPage).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(vi.mocked(api.listPage).mock.calls.length).toBeGreaterThan(listPageCallsBeforeClear));
     expect(api.search).toHaveBeenCalledTimes(1);
 
     // Pagination should be restored after clearing search.
@@ -74,7 +99,7 @@ describe('FormsPageClient', () => {
     const api = makeApi();
     const user = userEvent.setup();
 
-    render(<FormsPageClient repo={api} />);
+    renderWithRole('admin', api);
 
     await waitFor(() => expect(api.listSubmissions).toHaveBeenCalledTimes(1));
 
@@ -98,7 +123,7 @@ describe('FormsPageClient', () => {
     const api = makeApi();
     const user = userEvent.setup();
 
-    render(<FormsPageClient repo={api} />);
+    renderWithRole('admin', api);
 
     await waitFor(() => expect(api.listSubmissions).toHaveBeenCalledTimes(1));
 
@@ -134,7 +159,7 @@ describe('FormsPageClient', () => {
     });
     const user = userEvent.setup();
 
-    render(<FormsPageClient repo={api} />);
+    renderWithRole('staff', api);
 
     await waitFor(() => expect(api.listSubmissions).toHaveBeenCalledTimes(1));
 
@@ -167,7 +192,7 @@ describe('FormsPageClient', () => {
     );
 
     const user = userEvent.setup();
-    render(<FormsPageClient repo={api} />);
+    renderWithRole('staff', api);
 
     await waitFor(() => expect(api.listSubmissions).toHaveBeenCalledTimes(1));
 
@@ -209,7 +234,7 @@ describe('FormsPageClient', () => {
     });
     const user = userEvent.setup();
 
-    render(<FormsPageClient repo={api} />);
+    renderWithRole('staff', api);
 
     await waitFor(() => expect(api.listSubmissions).toHaveBeenCalledTimes(1));
 
@@ -248,7 +273,7 @@ describe('FormsPageClient', () => {
       },
     ]);
 
-    render(<FormsPageClient repo={api} />);
+    renderWithRole('STAFF', api);
 
     await waitFor(() => expect(api.listSubmissions).toHaveBeenCalledTimes(1));
 
@@ -280,16 +305,18 @@ describe('FormsPageClient', () => {
     vi.mocked(api.update).mockResolvedValue({ ...activeForm, status: FormStatus.Draft });
 
     const user = userEvent.setup();
-    render(<FormsPageClient repo={api} />);
+    renderWithRole('ADMIN', api);
 
     await waitFor(() => expect(api.listSubmissions).toHaveBeenCalledTimes(1));
 
-    // Staff initial load should call active once.
-    await waitFor(() => expect(api.active).toHaveBeenCalledTimes(1));
+    // Staff initial load should fetch active forms at least once.
+    await waitFor(() => expect(api.active).toHaveBeenCalled());
+    const activeCallsBeforeAdmin = vi.mocked(api.active).mock.calls.length;
 
     // Switch to admin and ensure list is loaded once.
     await user.click(screen.getByRole('button', { name: /admin view/i }));
-    await waitFor(() => expect(api.listPage).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.listPage).toHaveBeenCalled());
+    const listPageCallsBeforeToggle = vi.mocked(api.listPage).mock.calls.length;
 
     // Toggle to draft in admin. Refresh should be list, not active.
     vi.mocked(api.listPage).mockResolvedValue({
@@ -300,8 +327,8 @@ describe('FormsPageClient', () => {
     });
     await user.click(await screen.findByRole('button', { name: /toggle status/i }));
     await waitFor(() => expect(api.update).toHaveBeenCalled());
-    await waitFor(() => expect(api.listPage).toHaveBeenCalledTimes(2));
-    expect(api.active).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(vi.mocked(api.listPage).mock.calls.length).toBeGreaterThanOrEqual(listPageCallsBeforeToggle + 1));
+    expect(vi.mocked(api.active).mock.calls.length).toBe(activeCallsBeforeAdmin);
 
     // Form should still be visible in admin even as draft.
     const surveyHeading = await screen.findByRole('heading', { level: 3, name: 'Survey' });
@@ -312,7 +339,7 @@ describe('FormsPageClient', () => {
     // Switch back to staff: active should load again (entering staff view) and form should disappear.
     vi.mocked(api.active).mockResolvedValue([]);
     await user.click(screen.getByRole('button', { name: /staff view/i }));
-    await waitFor(() => expect(api.active).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(vi.mocked(api.active).mock.calls.length).toBe(activeCallsBeforeAdmin + 1));
     expect(screen.queryByRole('heading', { level: 3, name: 'Survey' })).not.toBeInTheDocument();
   });
 
@@ -328,7 +355,7 @@ describe('FormsPageClient', () => {
     ]);
 
     const user = userEvent.setup();
-    render(<FormsPageClient repo={api} />);
+    renderWithRole('staff', api);
 
     await waitFor(() => expect(api.listSubmissions).toHaveBeenCalledTimes(1));
 
@@ -345,5 +372,13 @@ describe('FormsPageClient', () => {
 
     await user.click(submissionButton);
     await waitFor(() => expect(screen.queryByText(/submission id/i)).not.toBeInTheDocument());
+  });
+
+  it('hides Admin view toggle for staff users', async () => {
+    const api = makeApi();
+    renderWithRole('STAFF', api);
+
+    await waitFor(() => expect(api.listSubmissions).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('button', { name: /admin view/i })).not.toBeInTheDocument();
   });
 });

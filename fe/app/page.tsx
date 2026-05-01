@@ -9,9 +9,14 @@ export default function Home() {
         <p className="mt-4 text-lg leading-8 text-zinc-600">
           Create and manage dynamic forms with shared Zod contracts, then test the full flow against the backend.
         </p>
-        <Link className="mt-8 inline-flex rounded-xl bg-zinc-950 px-5 py-3 font-medium text-white" href="/forms">
-          Open forms
-        </Link>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link className="inline-flex rounded-xl bg-zinc-950 px-5 py-3 font-medium text-white" href="/dashboard">
+            Open dashboard
+          </Link>
+          <Link className="inline-flex rounded-xl border border-zinc-200 bg-white px-5 py-3 font-medium text-zinc-900" href="/login">
+            Sign in
+          </Link>
+        </div>
       </section>
     </main>
   );
