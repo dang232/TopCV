@@ -1,4 +1,6 @@
 import { API_V1 } from './constants';
+import { getAccessTokenFromStorage } from '@/src/shared/auth';
+import { getPublicEnv } from '@/src/shared/config/publicEnv';
 
 export class ApiHttpError extends Error {
   readonly status: number;
@@ -21,7 +23,22 @@ export type CreateApiClientOptions = {
 };
 
 function defaultApiOrigin(): string {
-  return (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  return getPublicEnv().apiBaseUrl.replace(/\/$/, '');
+}
+
+type RestErrorResponse = {
+  error?: {
+    code?: string;
+    message?: string;
+    details?: unknown;
+  };
+};
+
+function getServerErrorMessage(body: unknown): string | undefined {
+  if (!body || typeof body !== 'object') return undefined;
+  const maybe = body as RestErrorResponse;
+  const msg = maybe.error?.message;
+  return typeof msg === 'string' && msg.trim() ? msg : undefined;
 }
 
 export function createApiClient(options: CreateApiClientOptions = {}) {
@@ -58,7 +75,7 @@ export function createApiClient(options: CreateApiClientOptions = {}) {
       } catch {
         body = text;
       }
-      throw new ApiHttpError(res.status, body);
+      throw new ApiHttpError(res.status, body, getServerErrorMessage(body));
     }
     if (res.status === 204) {
       return undefined as T;
@@ -69,7 +86,9 @@ export function createApiClient(options: CreateApiClientOptions = {}) {
   return { apiFetch, apiFetchJson, origin };
 }
 
-const defaultClient = createApiClient();
+const defaultClient = createApiClient({
+  getAccessToken: () => getAccessTokenFromStorage(),
+});
 
 export const apiFetch = defaultClient.apiFetch.bind(defaultClient);
 export const apiFetchJson = defaultClient.apiFetchJson.bind(defaultClient);
