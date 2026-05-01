@@ -59,6 +59,22 @@ export const FormDtoSchema = CreateFormInputSchema.extend({
   updatedAt: z.string().datetime(),
 });
 
+/**
+ * Pagination is 1-indexed: `page=1` returns the first page.
+ * `pageSize` is the number of items per page.
+ */
+export const PaginationInputSchema = z.object({
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(1).max(100),
+});
+
+export const PaginatedFormListSchema = z.object({
+  items: z.array(FormDtoSchema),
+  total: z.number().int().min(0),
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(1),
+});
+
 export const UpdateFormInputSchema = z
   .object({
     id: z.string().min(1),
@@ -104,60 +120,14 @@ export type FormField = z.infer<typeof FormFieldSchema>;
 export type CreateFormInput = z.infer<typeof CreateFormInputSchema>;
 export type UpdateFormInput = z.infer<typeof UpdateFormInputSchema>;
 export type FormDto = z.infer<typeof FormDtoSchema>;
+export type PaginationInput = z.infer<typeof PaginationInputSchema>;
+export type PaginatedFormList = z.infer<typeof PaginatedFormListSchema>;
 export type SearchFormsInput = z.infer<typeof SearchFormsInputSchema>;
 export type FormAnswerValue = z.infer<typeof FormAnswerValueSchema>;
 export type SubmitFormInput = z.infer<typeof SubmitFormInputSchema>;
 export type SubmissionDto = z.infer<typeof SubmissionDtoSchema>;
 
-const hexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Color must be a #RRGGBB hex value');
-
-function isPastDate(value: string): boolean {
-  const inputDate = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(inputDate.getTime())) {
-    return true;
-  }
-
-  const today = new Date();
-  const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-
-  return inputDate < todayUtc;
-}
-
 /** Stable answer key on the wire; matches CSR inputs (`field.id ?? field.label`). */
 export function submissionAnswerKey(field: FormField): string {
   return field.id ?? field.label;
-}
-
-function answerSchemaForField(field: FormField): z.ZodType<FormAnswerValue | undefined> {
-  let schema: z.ZodType<FormAnswerValue>;
-
-  switch (field.type) {
-    case FieldType.Text:
-      schema = z.string().max(200);
-      break;
-    case FieldType.Number:
-      schema = z.number().min(0).max(100);
-      break;
-    case FieldType.Date:
-      schema = z.string().refine((value) => !isPastDate(value), 'Date cannot be in the past');
-      break;
-    case FieldType.Color:
-      schema = hexColorSchema;
-      break;
-    case FieldType.Select:
-      schema = z.enum([field.options[0], ...field.options.slice(1)]);
-      break;
-    default:
-      throw new Error(`Unsupported field type: ${String(field)}`);
-  }
-
-  return field.required ? schema : schema.optional();
-}
-
-export function createSubmissionAnswersSchema(fields: FormField[]) {
-  const shape: Record<string, z.ZodType<FormAnswerValue | undefined>> = Object.fromEntries(
-    fields.map((field) => [submissionAnswerKey(field), answerSchemaForField(field)]),
-  );
-
-  return z.object(shape);
 }
