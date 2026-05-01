@@ -1,5 +1,3 @@
-import type { FormStatus } from '../../domain/form-status';
-import type { FormField } from '../../domain/form-field';
 import { DynamicForm } from '../../domain/form.aggregate';
 import { FormEntity } from './form.entity';
 
@@ -25,8 +23,8 @@ export class FormMapper {
       title: entity.title,
       description: entity.description,
       order: entity.order,
-      status: entity.status as FormStatus,
-      fields: entity.fields as FormField[],
+      status: entity.status,
+      fields: entity.fields,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });

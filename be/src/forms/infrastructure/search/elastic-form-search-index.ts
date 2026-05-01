@@ -76,10 +76,22 @@ export class ElasticFormSearchIndex implements FormSearchIndex {
   }
 
   async remove(id: string): Promise<void> {
-    await this.client.delete({
-      index: this.indexName,
-      id,
-    });
+    try {
+      await this.client.delete({
+        index: this.indexName,
+        id,
+      });
+    } catch (error) {
+      const statusCode = (error as { meta?: { statusCode?: number }; statusCode?: number } | null | undefined)?.meta
+        ?.statusCode ?? (error as { statusCode?: number } | null | undefined)?.statusCode;
+
+      // Elasticsearch returns 404 when the document doesn't exist. Deleting a form should be idempotent.
+      if (statusCode === 404) {
+        return;
+      }
+
+      throw error;
+    }
   }
 
   async search(query: string): Promise<string[]> {

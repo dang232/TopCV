@@ -15,8 +15,8 @@ export class SearchFormsUseCase {
   async execute(input: SearchFormsInput): Promise<FormDto[]> {
     const { query } = SearchFormsInputSchema.parse(input);
     const ids = await this.searchIndex.search(query);
-    const forms = await Promise.all(ids.map((id) => this.repository.findById(id)));
+    const forms = await this.repository.findByIds(ids);
 
-    return forms.filter((form): form is NonNullable<typeof form> => Boolean(form)).map((form) => FormDtoMapper.toDto(form));
+    return forms.map((form) => FormDtoMapper.toDto(form));
   }
 }

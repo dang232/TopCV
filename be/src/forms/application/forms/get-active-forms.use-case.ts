@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { FormDto } from '@topcv/shared/forms';
+import { FormStatus, type FormDto } from '@topcv/shared/forms';
 
-import { RedisFormCache } from '../../infrastructure/cache/redis-form-cache';
+import { FormCacheKeys } from '../cache-keys/form-cache-keys';
 import { FormDtoMapper } from '../mapping/form-dto.mapper';
 import { FORM_CACHE, type FormCache } from '../ports/form.cache';
 import { FORM_REPOSITORY, type FormRepository } from '../ports/form.repository';
@@ -14,7 +14,7 @@ export class GetActiveFormsUseCase {
   ) {}
 
   async execute(): Promise<FormDto[]> {
-    const key = RedisFormCache.keys.active();
+    const key = FormCacheKeys.active();
     const cached = await this.cache.get<FormDto[]>(key);
 
     if (cached) {
@@ -23,7 +23,7 @@ export class GetActiveFormsUseCase {
 
     const activeForms = (await this.repository.findAll())
       .map((form) => FormDtoMapper.toDto(form))
-      .filter((form) => form.status === 'active')
+      .filter((form) => form.status === FormStatus.Active)
       .sort((left, right) => left.order - right.order);
 
     await this.cache.set(key, activeForms, 60);

@@ -27,10 +27,38 @@ export class MikroFormRepository implements FormRepository {
     return entities.map((entity) => FormMapper.toDomain(entity));
   }
 
+  async countAll(): Promise<number> {
+    return this.em.count(FormEntity, {});
+  }
+
+  async findPage(input: { skip: number; take: number }): Promise<DynamicForm[]> {
+    const entities = await this.em.find(
+      FormEntity,
+      {},
+      { orderBy: { order: 'asc' }, offset: input.skip, limit: input.take },
+    );
+
+    return entities.map((entity) => FormMapper.toDomain(entity));
+  }
+
   async findById(id: string): Promise<DynamicForm | null> {
     const entity = await this.em.findOne(FormEntity, { publicId: id });
 
     return entity ? FormMapper.toDomain(entity) : null;
+  }
+
+  async findByIds(ids: string[]): Promise<DynamicForm[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const entities = await this.em.find(FormEntity, { publicId: { $in: ids } });
+    const forms = entities.map((entity) => FormMapper.toDomain(entity));
+    const order = new Map(ids.map((id, index) => [id, index] as const));
+
+    return forms.sort(
+      (left, right) => (order.get(left.toSnapshot().id) ?? 0) - (order.get(right.toSnapshot().id) ?? 0),
+    );
   }
 
   async delete(id: string): Promise<void> {

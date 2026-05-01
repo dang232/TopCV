@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { FormIdInputSchema, type FormDto } from '@topcv/shared/forms';
 
 import { FormNotFound } from '../../domain/errors/form-not-found';
-import { RedisFormCache } from '../../infrastructure/cache/redis-form-cache';
+import { FormCacheKeys } from '../cache-keys/form-cache-keys';
 import { FormDtoMapper } from '../mapping/form-dto.mapper';
 import { FORM_CACHE, type FormCache } from '../ports/form.cache';
 import { FORM_REPOSITORY, type FormRepository } from '../ports/form.repository';
@@ -16,7 +16,7 @@ export class GetFormUseCase {
 
   async execute(input: { id: string }): Promise<FormDto> {
     const { id } = FormIdInputSchema.parse(input);
-    const key = RedisFormCache.keys.byId(id);
+    const key = FormCacheKeys.byId(id);
     const cached = await this.cache.get<FormDto>(key);
 
     if (cached) {

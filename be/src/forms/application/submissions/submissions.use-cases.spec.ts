@@ -14,14 +14,20 @@ describe('submission use cases', () => {
     description: '',
     order: 0,
     status: FormStatus.Active,
-    fields: [{ id: 'score', label: 'Score', type: FieldType.Number, order: 0, required: true }],
+    fields: [
+      { id: 'score', label: 'Score', type: FieldType.Number, order: 0, required: true },
+      { id: 'note', label: 'Note', type: FieldType.Text, order: 1, required: false },
+    ],
   });
 
   it('validates answers against stored fields before saving a submission', async () => {
     const forms: FormRepository = {
       save: vi.fn(),
       findAll: vi.fn(),
+      countAll: vi.fn(async () => 1),
+      findPage: vi.fn(async () => [form]),
       findById: vi.fn(async () => form),
+      findByIds: vi.fn(),
       delete: vi.fn(),
     };
     const submissions: SubmissionRepository = {
@@ -35,7 +41,36 @@ describe('submission use cases', () => {
       () => new Date('2099-01-01T00:00:00.000Z'),
     );
 
-    await expect(useCase.execute({ formId: 'form-1', answers: { score: 50 } })).resolves.toEqual({
+    await expect(useCase.execute({ formId: 'form-1', answers: { score: 50, note: 'Hello' } })).resolves.toEqual({
+      id: 'submission-1',
+      formId: 'form-1',
+      answers: { score: 50, note: 'Hello' },
+      submittedAt: '2099-01-01T00:00:00.000Z',
+    });
+  });
+
+  it('coerces string number answers and omits empty optional answers', async () => {
+    const forms: FormRepository = {
+      save: vi.fn(),
+      findAll: vi.fn(),
+      countAll: vi.fn(async () => 1),
+      findPage: vi.fn(async () => [form]),
+      findById: vi.fn(async () => form),
+      findByIds: vi.fn(),
+      delete: vi.fn(),
+    };
+    const submissions: SubmissionRepository = {
+      save: vi.fn(async (submission) => submission),
+      findAll: vi.fn(),
+    };
+    const useCase = new SubmitFormUseCase(
+      forms,
+      submissions,
+      () => 'submission-1',
+      () => new Date('2099-01-01T00:00:00.000Z'),
+    );
+
+    await expect(useCase.execute({ formId: 'form-1', answers: { score: '50', note: '' } })).resolves.toEqual({
       id: 'submission-1',
       formId: 'form-1',
       answers: { score: 50 },
@@ -47,7 +82,10 @@ describe('submission use cases', () => {
     const forms: FormRepository = {
       save: vi.fn(),
       findAll: vi.fn(),
+      countAll: vi.fn(async () => 1),
+      findPage: vi.fn(async () => [form]),
       findById: vi.fn(async () => form),
+      findByIds: vi.fn(),
       delete: vi.fn(),
     };
     const submissions: SubmissionRepository = {
@@ -56,6 +94,7 @@ describe('submission use cases', () => {
     };
     const useCase = new SubmitFormUseCase(forms, submissions);
 
+    await expect(useCase.execute({ formId: 'form-1', answers: { score: -1 } })).rejects.toThrow();
     await expect(useCase.execute({ formId: 'form-1', answers: { score: 101 } })).rejects.toThrow();
   });
 
