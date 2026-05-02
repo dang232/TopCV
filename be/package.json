@@ -21,6 +21,7 @@
     "@nestjs/platform-express": "^11.1.19",
     "@nestjs/throttler": "^6.5.0",
     "@orpc/server": "^1.14.0",
+    "@orpc/standard-server-node": "^1.14.0",
     "@topcv/shared": "workspace:*",
     "dotenv": "^17.4.2",
     "helmet": "^8.1.0",
