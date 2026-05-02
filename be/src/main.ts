@@ -6,7 +6,6 @@ import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-option
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
-import { RequestLoggingInterceptor } from './shared/http/request-logging.interceptor';
 
 /** CSR calls API from a different origin (:3001 → :3000); browsers require Access-Control-Allow-Origin from this server. */
 function corsOptions(): CorsOptions {
@@ -30,7 +29,6 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.enableCors(corsOptions());
   app.use(helmet());
-  app.useGlobalInterceptors(new RequestLoggingInterceptor());
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();

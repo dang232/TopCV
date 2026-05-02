@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildUserFacingHttpErrorMessage, extractRestErrorFromBody } from './restApiError';
+import { ApiHttpError } from './apiClient';
+import { buildUserFacingHttpErrorMessage, extractRestErrorFromBody, toUserFacingMessage } from './restApiError';
 
 describe('extractRestErrorFromBody', () => {
   it('reads nested error code and message', () => {
@@ -45,5 +46,26 @@ describe('buildUserFacingHttpErrorMessage', () => {
     expect(buildUserFacingHttpErrorMessage(502, { error: { message: html } }, html)).toBe(
       'The authentication service is temporarily unavailable. Please try again shortly.',
     );
+  });
+});
+
+describe('toUserFacingMessage', () => {
+  it('maps ApiHttpError using shared extraction rules', () => {
+    const err = new ApiHttpError(
+      401,
+      { error: { code: 'WRONG_CREDENTIALS', message: 'Wrong username or password' } },
+      'Wrong username or password',
+    );
+    expect(toUserFacingMessage(err)).toBe('Wrong username or password');
+  });
+
+  it('maps network TypeErrors', () => {
+    expect(toUserFacingMessage(new TypeError('Failed to fetch'))).toBe(
+      'Unable to reach the server. Check your connection and that the API is running.',
+    );
+  });
+
+  it('falls back for unknown errors', () => {
+    expect(toUserFacingMessage({})).toBe('Something went wrong. Please try again.');
   });
 });
