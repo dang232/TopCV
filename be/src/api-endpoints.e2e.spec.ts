@@ -184,6 +184,23 @@ describe(
       })
         .overrideProvider(KeycloakJwtVerifier)
         .useValue({
+          verifyAuthorizationHeaderDetailed: vi.fn(async (authHeader: string | undefined) => {
+            const header = authHeader?.trim();
+            if (!header) return { user: null, outcome: 'missing_authorization' as const };
+            if (header === 'Bearer admin') {
+              return {
+                user: { sub: 'admin', preferredUsername: 'admin', roles: ['ADMIN'], rawRoles: ['ADMIN'] },
+                outcome: 'ok' as const,
+              };
+            }
+            if (header === 'Bearer staff') {
+              return {
+                user: { sub: 'staff', preferredUsername: 'staff', roles: ['STAFF'], rawRoles: ['STAFF'] },
+                outcome: 'ok' as const,
+              };
+            }
+            return { user: null, outcome: 'jwt_invalid' as const };
+          }),
           verifyAuthorizationHeader: vi.fn(async (authHeader: string | undefined) => {
             const header = authHeader?.trim();
             if (!header) return null;

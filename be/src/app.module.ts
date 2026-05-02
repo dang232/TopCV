@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
@@ -8,9 +12,27 @@ import { ExternalClientsModule } from './infra/external-clients.module';
 import { FormEntitySchema } from './forms/infrastructure/persistence/form.entity';
 import { SubmissionEntitySchema } from './forms/infrastructure/persistence/submission.entity';
 import { AuthRestModule } from './auth/auth-rest.module';
+import { validateEnv } from './config/env';
+
+const throttlingEnabled = process.env.NODE_ENV !== 'test' && process.env.THROTTLE_ENABLED !== 'false';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validate: validateEnv,
+    }),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: config.get<number>('THROTTLE_TTL_SECONDS', 60),
+            limit: config.get<number>('THROTTLE_LIMIT', 120),
+          },
+        ],
+      }),
+    }),
     DatabaseModule.forRoot([FormEntitySchema, SubmissionEntitySchema]),
     ExternalClientsModule,
     AuthRestModule,
@@ -18,6 +40,16 @@ import { AuthRestModule } from './auth/auth-rest.module';
     HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    ...(throttlingEnabled
+      ? [
+          {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
+          },
+        ]
+      : []),
+  ],
 })
 export class AppModule {}

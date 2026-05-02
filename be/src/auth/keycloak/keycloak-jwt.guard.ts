@@ -1,27 +1,51 @@
-import { CanActivate, Injectable, type ExecutionContext } from '@nestjs/common';
+import { CanActivate, Inject, Injectable, type ExecutionContext } from '@nestjs/common';
+
+
+
+import type { RequestWithAuthUser } from '../request-user';
 
 import { KeycloakJwtVerifier } from './keycloak-jwt.verifier';
 
-type ReqWithUser = {
-  headers?: Record<string, unknown>;
-  user?: unknown;
-};
+
 
 @Injectable()
+
 export class KeycloakJwtAuthGuard implements CanActivate {
-  constructor(private readonly verifier: KeycloakJwtVerifier) {}
+
+  constructor(@Inject(KeycloakJwtVerifier) private readonly verifier: KeycloakJwtVerifier) {}
+
+
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest<ReqWithUser>();
-    const authHeader = typeof req?.headers?.authorization === 'string' ? req.headers.authorization : undefined;
+
+    const req = context.switchToHttp().getRequest<RequestWithAuthUser>();
+
+    const authHeader = typeof req.headers?.authorization === 'string' ? req.headers.authorization : undefined;
+
+
 
     try {
-      req.user = await this.verifier.verifyAuthorizationHeader(authHeader);
+
+      const result = await this.verifier.verifyAuthorizationHeaderDetailed(authHeader);
+
+      req.user = result.user;
+
+      req.authInfo = { outcome: result.outcome, errorName: result.errorName };
+
     } catch {
+
       req.user = null;
+
+      req.authInfo = { outcome: 'jwt_verify_failed' };
+
     }
 
-    // RBAC is enforced by oRPC middleware (per-procedure).
+
+
     return true;
+
   }
+
 }
+
+

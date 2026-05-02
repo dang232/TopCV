@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { KeycloakAuthService } from './keycloak-auth.service';
-import { InvalidRoleError, KeycloakConflictError, KeycloakForbiddenError, KeycloakUnreachableError, MisconfigError } from './keycloak-auth.errors';
+import {
+  InvalidCredentialsError,
+  InvalidRoleError,
+  KeycloakConflictError,
+  KeycloakForbiddenError,
+  KeycloakUnreachableError,
+  MisconfigError,
+} from './keycloak-auth.errors';
 import { jsonResponse, textResponse } from '../../shared/testing/http';
 
 describe(KeycloakAuthService.name, () => {
@@ -101,6 +108,50 @@ describe(KeycloakAuthService.name, () => {
     expect(res.access_token).toBe('at');
     expect(fetchMock).toHaveBeenCalled();
     expect(lastUrl).toBe('http://localhost:8080/auth/realms/topcv/protocol/openid-connect/token');
+  });
+
+  it('refreshWithRefreshTokenGrant posts refresh_token grant', async () => {
+    process.env.KEYCLOAK_ISSUER = 'http://localhost:8080/auth/realms/topcv';
+    process.env.KEYCLOAK_ADMIN_CLIENT_ID = 'topcv-bff';
+    process.env.KEYCLOAK_ADMIN_CLIENT_SECRET = 'secret';
+
+    let body = '';
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const b = init?.body;
+      body = b instanceof URLSearchParams ? b.toString() : typeof b === 'string' ? b : '';
+      return jsonResponse({ access_token: 'at2', refresh_token: 'rt2', expires_in: 300 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const svc = new KeycloakAuthService();
+    const res = await svc.refreshWithRefreshTokenGrant({ refreshToken: 'old-rt', clientId: 'topcv-api' });
+
+    expect(res.access_token).toBe('at2');
+    expect(res.refresh_token).toBe('rt2');
+    expect(body).toContain('grant_type=refresh_token');
+    expect(body).toContain('refresh_token=old-rt');
+    expect(body).toContain('client_id=topcv-api');
+  });
+
+  it('loginWithPasswordGrant throws InvalidCredentialsError on invalid_grant', async () => {
+    process.env.KEYCLOAK_ISSUER = 'http://localhost:8080/realms/topcv';
+    process.env.KEYCLOAK_ADMIN_CLIENT_ID = 'topcv-bff';
+    process.env.KEYCLOAK_ADMIN_CLIENT_SECRET = 'secret';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse(
+          { error: 'invalid_grant', error_description: 'Invalid user credentials' },
+          { status: 400 },
+        ),
+      ),
+    );
+
+    const svc = new KeycloakAuthService();
+    await expect(svc.loginWithPasswordGrant({ usernameOrEmail: 'bob', password: 'wrong', clientId: 'topcv-api' })).rejects.toBeInstanceOf(
+      InvalidCredentialsError,
+    );
   });
 
   it('registerUser throws MisconfigError when admin env missing', async () => {

@@ -1,4 +1,4 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/common';
 import type { MikroORM } from '@mikro-orm/mongodb';
 import type { Client as ElasticsearchClient } from '@elastic/elasticsearch';
 import type { Redis } from 'ioredis';
@@ -16,6 +16,26 @@ export class HealthController {
 
   @Get()
   async check() {
+    return this.probeDependencies();
+  }
+
+  /** Liveness: process is up. No dependency checks. */
+  @Get('live')
+  live() {
+    return { status: 'ok' };
+  }
+
+  /** Readiness: dependencies must be reachable, otherwise 503. */
+  @Get('ready')
+  async ready() {
+    const result = await this.probeDependencies();
+    if (result.status !== 'ok') {
+      throw new ServiceUnavailableException(result);
+    }
+    return result;
+  }
+
+  private async probeDependencies() {
     const probe = async (fn: () => Promise<boolean>) => {
       try {
         return await fn();

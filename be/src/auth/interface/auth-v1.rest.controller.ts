@@ -1,5 +1,5 @@
 import { Body, Controller, Inject, Post } from '@nestjs/common';
-import { LoginInputSchema, LogoutInputSchema, RegisterInputSchema } from '@topcv/shared/auth';
+import { LoginInputSchema, LogoutInputSchema, RefreshInputSchema, RegisterInputSchema } from '@topcv/shared/auth';
 
 import { HTTP_API_V1_AUTH_PATH } from '../../http/api-path.constants';
 import { parseZodBody } from '../../shared/http/zod-parse';
@@ -27,6 +27,20 @@ export class AuthV1RestController {
   }> {
     const parsed = parseZodBody(LoginInputSchema, body);
     return await this.auth.login(parsed);
+  }
+
+  @Post('refresh')
+  async refresh(@Body() body: unknown): Promise<{
+    accessToken: string;
+    refreshToken?: string;
+    idToken?: string;
+    expiresIn?: number;
+    refreshExpiresIn?: number;
+    tokenType?: string;
+    scope?: string;
+  }> {
+    const parsed = parseZodBody(RefreshInputSchema, body);
+    return await this.auth.refresh(parsed);
   }
 
   @Post('logout')
