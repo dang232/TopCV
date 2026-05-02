@@ -18,6 +18,58 @@ import { buildDraftFieldFromDraft, parseSelectOptions } from '../model/draftFiel
 import type { CreateFormDraft } from '../model/draftTypes';
 import { useFormsControllerInternals } from './useFormsController.internals';
 
+/**
+ * Coalesce concurrent identical admin list fetches (same page + pageSize).
+ * React 18 dev Strict Mode remounts client components, which resets hook refs, so
+ * `setMode('admin')` can run twice **sequentially** (first completes, then second mount).
+ * In-flight promise sharing only helps overlapping calls; a short TTL cache covers the
+ * Strict remount case. Explicit refresh bypasses the cache.
+ */
+const LIST_PAGE_CACHE_TTL_MS = 2000;
+
+const inflightPaginatedFormListByKey = new Map<string, Promise<PaginatedFormList>>();
+const cachedPaginatedFormListByKey = new Map<string, { data: PaginatedFormList; expiresAt: number }>();
+
+/** No-op outside Vitest; clears module-level list dedupe between test cases. */
+export function resetFormsListPageCoalescingForTests(): void {
+  if (process.env.VITEST !== 'true') return;
+  inflightPaginatedFormListByKey.clear();
+  cachedPaginatedFormListByKey.clear();
+}
+
+function shareInflightPaginatedFormList(
+  key: string,
+  fetcher: () => Promise<PaginatedFormList>,
+  bypassCache: boolean,
+): Promise<PaginatedFormList> {
+  const now = Date.now();
+  if (bypassCache) {
+    cachedPaginatedFormListByKey.delete(key);
+  } else {
+    const hit = cachedPaginatedFormListByKey.get(key);
+    if (hit && hit.expiresAt > now) {
+      return Promise.resolve(hit.data);
+    }
+  }
+
+  const existing = inflightPaginatedFormListByKey.get(key);
+  if (existing) return existing;
+
+  const p = fetcher()
+    .then((data) => {
+      cachedPaginatedFormListByKey.set(key, {
+        data,
+        expiresAt: Date.now() + LIST_PAGE_CACHE_TTL_MS,
+      });
+      return data;
+    })
+    .finally(() => {
+      inflightPaginatedFormListByKey.delete(key);
+    });
+  inflightPaginatedFormListByKey.set(key, p);
+  return p;
+}
+
 export type FormsControllerState = {
   forms: FormDto[];
   adminListPage: number;
@@ -113,8 +165,18 @@ export function useFormsController(init: {
   );
 
   const loadAdminPage = useCallback(
-    async (page: number) => {
-      await runApi(() => setFormsFromPage(() => api.listPage({ page, pageSize: adminListPageSize })));
+    async (page: number, opts?: { bypassCache?: boolean }) => {
+      const listKey = `${page}:${adminListPageSize}`;
+      const bypassCache = opts?.bypassCache === true;
+      await runApi(() =>
+        setFormsFromPage(() =>
+          shareInflightPaginatedFormList(
+            listKey,
+            () => api.listPage({ page, pageSize: adminListPageSize }),
+            bypassCache,
+          ),
+        ),
+      );
     },
     [adminListPageSize, api, runApi, setFormsFromPage],
   );
@@ -131,7 +193,7 @@ export function useFormsController(init: {
 
   const refreshForms = useCallback(async () => {
     if (currentModeRef.current === 'admin') {
-      await loadAdminPage(lastAdminListPageRef.current);
+      await loadAdminPage(lastAdminListPageRef.current, { bypassCache: true });
       return;
     }
     await loadActive();

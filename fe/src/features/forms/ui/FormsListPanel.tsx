@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 
 import { FormCard } from './FormCard';
 import { FormsToolbar } from './FormsToolbar';
-import { formsButtonOutline } from './formsButtonStyles';
+import { Button } from '@/src/components/ui/button';
 
 export type FormsMode = 'admin' | 'staff';
 
@@ -96,7 +96,7 @@ export function FormsListPanel({
   }, [forms]);
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+    <section className="rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm">
       <FormsToolbar
         onSearch={onSearch}
         onRefresh={onRefresh}
@@ -106,34 +106,24 @@ export function FormsListPanel({
 
       {mode === 'admin' && !isAdminSearchMode && page !== undefined && pageSize !== undefined && total !== undefined ? (
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-zinc-600">
-            Page <span className="font-medium text-zinc-900">{page}</span> of{' '}
-            <span className="font-medium text-zinc-900">{totalPages}</span> ·{' '}
-            <span className="font-medium text-zinc-900">{total}</span> total
+          <p className="text-sm text-muted-foreground">
+            Page <span className="font-medium text-foreground">{page}</span> of{' '}
+            <span className="font-medium text-foreground">{totalPages}</span> ·{' '}
+            <span className="font-medium text-foreground">{total}</span> total
           </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              className={`${formsButtonOutline} px-3 py-2`}
-              onClick={onPrevPage}
-              disabled={!canPrev}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={onPrevPage} disabled={!canPrev}>
               Prev
-            </button>
-            <button
-              type="button"
-              className={`${formsButtonOutline} px-3 py-2`}
-              onClick={onNextPage}
-              disabled={!canNext}
-            >
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={onNextPage} disabled={!canNext}>
               Next
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
 
       <div className="mt-6 space-y-3">
-        {forms.length === 0 ? <p className="text-sm text-zinc-600">No forms yet.</p> : null}
+        {forms.length === 0 ? <p className="text-sm text-muted-foreground">No forms yet.</p> : null}
         {forms.map((form) => (
           <FormCard
             key={form.id}
@@ -150,18 +140,18 @@ export function FormsListPanel({
         ))}
       </div>
 
-      <div className="mt-6 rounded-xl bg-zinc-50 p-4">
+      <div className="mt-6 rounded-xl border border-border bg-muted/40 p-4">
         <div className="flex items-center justify-between gap-4">
-          <h4 className="text-sm font-semibold text-zinc-900">Submissions</h4>
-          <p className="text-xs text-zinc-600">{submissions.length} total</p>
+          <h4 className="text-sm font-semibold">Submissions</h4>
+          <p className="text-xs text-muted-foreground">{submissions.length} total</p>
         </div>
 
         {submissions.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-600">No submissions loaded yet.</p>
+          <p className="mt-2 text-sm text-muted-foreground">No submissions loaded yet.</p>
         ) : (
           <ol className="mt-3 space-y-2">
             {submissions.slice(0, 20).map((submission) => (
-              <li key={submission.id} className="rounded-lg border border-zinc-200 bg-white p-3">
+              <li key={submission.id} className="rounded-lg border border-border bg-card p-3">
                 <button
                   type="button"
                   className="w-full text-left"
@@ -171,12 +161,12 @@ export function FormsListPanel({
                   onClick={() => setExpandedSubmissionId((current) => (current === submission.id ? null : submission.id))}
                 >
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm font-medium text-zinc-900">
+                    <p className="text-sm font-medium">
                       {formTitleById[submission.formId] ?? submission.formId}
                     </p>
-                    <p className="text-xs text-zinc-600">{formatDateTime(submission.submittedAt)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDateTime(submission.submittedAt)}</p>
                   </div>
-                  <p className="mt-2 text-xs text-zinc-600">
+                  <p className="mt-2 text-xs text-muted-foreground">
                     {Object.keys(submission.answers ?? {}).length} answer(s) ·{' '}
                     <span className="font-mono">{truncateId(submission.id)}</span>
                   </p>
@@ -185,19 +175,19 @@ export function FormsListPanel({
                 {expandedSubmissionId === submission.id ? (
                   <div
                     id={`submission-details-${submission.id}`}
-                    className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3"
+                    className="mt-3 rounded-lg border border-border bg-muted/40 p-3"
                   >
-                    <dl className="grid gap-2 text-xs text-zinc-700 sm:grid-cols-2">
+                    <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                       <div className="sm:col-span-1">
-                        <dt className="font-medium text-zinc-900">Submitted</dt>
+                        <dt className="font-medium text-foreground">Submitted</dt>
                         <dd className="mt-0.5">{formatDateTime(submission.submittedAt)}</dd>
                       </div>
                       <div className="sm:col-span-1">
-                        <dt className="font-medium text-zinc-900">Form</dt>
+                        <dt className="font-medium text-foreground">Form</dt>
                         <dd className="mt-0.5">
                           {formTitleById[submission.formId] ? (
                             <>
-                              {formTitleById[submission.formId]} <span className="text-zinc-500">({submission.formId})</span>
+                              {formTitleById[submission.formId]} <span className="text-muted-foreground">({submission.formId})</span>
                             </>
                           ) : (
                             submission.formId
@@ -205,19 +195,19 @@ export function FormsListPanel({
                         </dd>
                       </div>
                       <div className="sm:col-span-2">
-                        <dt className="font-medium text-zinc-900">Submission id</dt>
+                        <dt className="font-medium text-foreground">Submission id</dt>
                         <dd className="mt-0.5 font-mono">{submission.id}</dd>
                       </div>
                     </dl>
 
                     <div className="mt-3">
-                      <p className="text-xs font-medium text-zinc-900">Answers</p>
+                      <p className="text-xs font-medium text-foreground">Answers</p>
                       {Object.keys(submission.answers ?? {}).length === 0 ? (
-                        <p className="mt-1 text-xs text-zinc-600">No answers.</p>
+                        <p className="mt-1 text-xs text-muted-foreground">No answers.</p>
                       ) : (
-                        <div className="mt-2 overflow-hidden rounded-md border border-zinc-200 bg-white">
+                        <div className="mt-2 overflow-hidden rounded-md border border-border bg-card">
                           <table className="w-full text-left text-xs">
-                            <thead className="bg-zinc-50 text-[11px] text-zinc-600">
+                            <thead className="bg-muted/40 text-[11px] text-muted-foreground">
                               <tr>
                                 <th scope="col" className="w-1/2 px-2 py-1.5 font-medium">
                                   Question
@@ -227,7 +217,7 @@ export function FormsListPanel({
                                 </th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-zinc-100">
+                            <tbody className="divide-y divide-border">
                               {Object.entries(submission.answers ?? {})
                                 .sort(([a], [b]) => a.localeCompare(b))
                                 .map(([key, rawValue]) => {
@@ -240,21 +230,21 @@ export function FormsListPanel({
 
                                   return (
                                     <tr key={key} className="align-top">
-                                      <th scope="row" className="px-2 py-1.5 font-medium text-zinc-900">
+                                      <th scope="row" className="px-2 py-1.5 font-medium text-foreground">
                                         <div className="flex flex-col gap-0.5">
                                           <span className="break-words">{displayKey}</span>
                                           {showKeyHint ? (
-                                            <span className="font-mono text-[11px] font-normal text-zinc-500">{key}</span>
+                                            <span className="font-mono text-[11px] font-normal text-muted-foreground">{key}</span>
                                           ) : null}
                                         </div>
                                       </th>
-                                      <td className="px-2 py-1.5 text-zinc-900">
+                                      <td className="px-2 py-1.5 text-foreground">
                                         {hexColor ? (
                                           <span className="inline-flex items-center gap-2">
                                             <span
                                               role="img"
                                               aria-label={`Color swatch ${hexColor}`}
-                                              className="h-4 w-4 rounded border border-zinc-300"
+                                              className="h-4 w-4 rounded border border-border"
                                               style={{ backgroundColor: hexColor }}
                                             />
                                             <span className="font-mono">{hexColor}</span>

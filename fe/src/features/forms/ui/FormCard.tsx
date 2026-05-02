@@ -17,7 +17,9 @@ import { CSS } from '@dnd-kit/utilities';
 
 import { fieldTypes } from '../model/fieldTypes';
 import { addFormField, moveFormField, removeFormField } from '../model/formFieldMutations';
-import { formsButtonOutline, formsButtonPrimary, formsButtonXs } from './formsButtonStyles';
+import { Button } from '@/src/components/ui/button';
+import { Badge } from '@/src/components/ui/badge';
+import { Input } from '@/src/components/ui/input';
 
 interface FormCardProps {
   form: FormDto;
@@ -86,7 +88,9 @@ function FieldInput({
   }, [field.required, field.type, value]);
 
   const common = {
-    className: 'mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2',
+    className:
+      'mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background ' +
+      'placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
     value,
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => onChange(event.target.value),
     required: field.required,
@@ -102,7 +106,7 @@ function FieldInput({
       return (
         <div className="mt-1 flex items-center gap-2">
           <input
-            className="h-10 w-14 rounded border border-zinc-300 bg-white p-1"
+            className="h-10 w-14 rounded-md border border-input bg-background p-1"
             type="color"
             value={value || '#000000'}
             onChange={(event) => onChange(event.target.value)}
@@ -110,9 +114,9 @@ function FieldInput({
             aria-label={fieldPlaceholder(field)}
           />
           {!field.required && value ? (
-            <button className={`${formsButtonOutline} ${formsButtonXs}`} type="button" onClick={() => onChange('')}>
+            <Button variant="outline" size="sm" type="button" onClick={() => onChange('')}>
               Clear
-            </button>
+            </Button>
           ) : null}
         </div>
       );
@@ -284,35 +288,37 @@ export function FormCard({
   }
 
   return (
-    <article className="rounded-xl border border-zinc-200 p-4">
+    <article className="rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="font-semibold">{form.title}</h3>
-          <p className="text-sm text-zinc-600">{form.status}</p>
-          <p className="text-sm text-zinc-600">{form.fields.length} field(s)</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <Badge variant={form.status === FormStatus.Active ? 'default' : 'secondary'}>{form.status}</Badge>
+            <span className="text-sm text-muted-foreground">{form.fields.length} field(s)</span>
+          </div>
         </div>
         {mode === 'admin' ? (
           <div className="flex flex-wrap gap-2">
-            <button className={`${formsButtonOutline} px-3 py-1`} onClick={() => setIsEditing((v) => !v)}>
+            <Button variant="outline" size="sm" type="button" onClick={() => setIsEditing((v) => !v)}>
               {isEditing ? 'Close' : 'Edit'}
-            </button>
-            <button className={`${formsButtonOutline} px-3 py-1`} onClick={() => onToggleStatus(form)}>
+            </Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => onToggleStatus(form)}>
               Toggle status
-            </button>
-            <button className={`${formsButtonOutline} px-3 py-1`} onClick={() => onDelete(form.id)}>
+            </Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => onDelete(form.id)}>
               Delete
-            </button>
+            </Button>
           </div>
         ) : null}
       </div>
 
       {mode === 'admin' && isEditing ? (
-        <form className="mt-4 space-y-4 rounded-xl bg-zinc-50 p-4" onSubmit={submitUpdate}>
+        <form className="mt-4 space-y-4 rounded-xl border border-border bg-muted/40 p-4" onSubmit={submitUpdate}>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm font-medium sm:col-span-2">
               Edit title
-              <input
-                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+              <Input
+                className="mt-1"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
               />
@@ -320,15 +326,15 @@ export function FormCard({
             <label className="block text-sm font-medium sm:col-span-2">
               Edit description
               <textarea
-                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
               />
             </label>
             <label className="block text-sm font-medium">
               Edit order
-              <input
-                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+              <Input
+                className="mt-1"
                 inputMode="numeric"
                 type="number"
                 min={0}
@@ -339,7 +345,7 @@ export function FormCard({
             <label className="block text-sm font-medium">
               Edit status
               <select
-                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={editStatus}
                 onChange={(e) => setEditStatus(e.target.value as FormDto['status'])}
               >
@@ -349,7 +355,7 @@ export function FormCard({
             </label>
           </div>
 
-          <div className="rounded-xl border border-zinc-200 bg-white p-4">
+          <div className="rounded-xl border border-border bg-card p-4">
             <h4 className="text-sm font-semibold">Fields</h4>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleEditFieldsDragEnd}>
               <SortableContext items={editFields.map((f) => f.id as string)} strategy={verticalListSortingStrategy}>
@@ -358,20 +364,20 @@ export function FormCard({
                     <SortableFormFieldRow key={field.id as string} fieldId={field.id as string}>
                       {({ dragHandleProps, dragAttributes }) => (
                         <div
-                          className="cursor-grab rounded-lg border border-zinc-200 p-3 active:cursor-grabbing"
+                          className="cursor-grab rounded-lg border border-border bg-card p-3 shadow-sm active:cursor-grabbing"
                           {...dragAttributes}
                           {...dragHandleProps}
                         >
                           <div className="mb-2 flex items-center gap-2">
-                            <span className="text-xs text-zinc-600">#{index + 1}</span>
-                            <span className="text-xs text-zinc-500">(drag row to reorder)</span>
+                            <span className="text-xs text-muted-foreground">#{index + 1}</span>
+                            <span className="text-xs text-muted-foreground">(drag row to reorder)</span>
                           </div>
 
                           <div className="grid gap-2 sm:grid-cols-2">
                             <label className="block text-sm font-medium sm:col-span-2">
                               Label
                               <input
-                                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+                                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 value={field.label}
                                 onPointerDownCapture={stopRowDragStart}
                                 onChange={(e) =>
@@ -384,7 +390,7 @@ export function FormCard({
                             <label className="block text-sm font-medium">
                               Type
                               <select
-                                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+                                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 value={field.type}
                                 onPointerDownCapture={stopRowDragStart}
                                 onChange={(e) => {
@@ -426,7 +432,7 @@ export function FormCard({
                             <label className="mt-3 block text-sm font-medium">
                               Options
                               <input
-                                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+                                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 value={(field.options ?? []).join(', ')}
                                 onPointerDownCapture={stopRowDragStart}
                                 onChange={(e) =>
@@ -449,32 +455,35 @@ export function FormCard({
                           ) : null}
 
                           <div className="mt-3 flex flex-wrap gap-2">
-                            <button
-                              className={`${formsButtonOutline} ${formsButtonXs}`}
+                            <Button
+                              variant="outline"
+                              size="sm"
                               type="button"
                               onClick={() => setEditFields((current) => moveFormField(current, index, -1))}
                               disabled={index === 0}
                               onPointerDownCapture={stopRowDragStart}
                             >
                               Up
-                            </button>
-                            <button
-                              className={`${formsButtonOutline} ${formsButtonXs}`}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               type="button"
                               onClick={() => setEditFields((current) => moveFormField(current, index, 1))}
                               disabled={index === editFields.length - 1}
                               onPointerDownCapture={stopRowDragStart}
                             >
                               Down
-                            </button>
-                            <button
-                              className={`${formsButtonOutline} ${formsButtonXs}`}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               type="button"
                               onClick={() => setEditFields((current) => removeFormField(current, index))}
                               onPointerDownCapture={stopRowDragStart}
                             >
                               Remove
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -484,12 +493,12 @@ export function FormCard({
               </SortableContext>
             </DndContext>
 
-            <div className="mt-4 rounded-lg bg-zinc-50 p-3">
+            <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm font-medium sm:col-span-2">
                   New field label
-                  <input
-                    className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+                  <Input
+                    className="mt-1"
                     value={newFieldLabel}
                     onChange={(e) => setNewFieldLabel(e.target.value)}
                   />
@@ -497,7 +506,7 @@ export function FormCard({
                 <label className="block text-sm font-medium">
                   New field type
                   <select
-                    className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     value={newFieldType}
                     onChange={(e) => setNewFieldType(e.target.value as FieldType)}
                   >
@@ -517,8 +526,8 @@ export function FormCard({
               {newFieldType === FieldType.Select ? (
                 <label className="mt-3 block text-sm font-medium">
                   New select options
-                  <input
-                    className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+                  <Input
+                    className="mt-1"
                     placeholder="Engineering, Sales"
                     value={newFieldOptions}
                     onChange={(e) => setNewFieldOptions(e.target.value)}
@@ -526,8 +535,9 @@ export function FormCard({
                 </label>
               ) : null}
 
-              <button
-                className="mt-3 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              <Button
+                className="mt-3"
+                variant="outline"
                 type="button"
                 onClick={() => {
                   setEditFields((current) =>
@@ -546,21 +556,17 @@ export function FormCard({
                 disabled={!newFieldLabel.trim()}
               >
                 Add field
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button
-              className={`${formsButtonPrimary} px-3 py-2`}
-              type="submit"
-              disabled={!canSave}
-            >
+            <Button type="submit" disabled={!canSave}>
               Save changes
-            </button>
-            <button className={`${formsButtonOutline} px-3 py-2`} type="button" onClick={resetEditState}>
+            </Button>
+            <Button variant="outline" type="button" onClick={resetEditState}>
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       ) : (
@@ -580,7 +586,7 @@ export function FormCard({
             return (
               <label key={answerKey} className="block text-sm font-medium">
                 {field.label}
-                {field.required ? <span className="text-red-600"> *</span> : null}
+                {field.required ? <span className="text-destructive"> *</span> : null}
                 <FieldInput
                   field={field}
                   value={answers[answerKey] ?? ''}
@@ -588,21 +594,16 @@ export function FormCard({
                   inputProps={aria}
                 />
                 {error ? (
-                  <span id={errorId} className="mt-1 block text-xs font-normal text-red-600">
+                  <span id={errorId} className="mt-1 block text-xs font-normal text-destructive">
                     {error}
                   </span>
                 ) : null}
               </label>
             );
           })}
-          <button
-            className={`${formsButtonPrimary} px-3 py-2`}
-            type="button"
-            onClick={() => onSubmit(form)}
-            disabled={isSubmitting || hasAnswerErrors}
-          >
+          <Button type="button" onClick={() => onSubmit(form)} disabled={isSubmitting || hasAnswerErrors}>
             Submit response
-          </button>
+          </Button>
         </div>
       )}
     </article>
