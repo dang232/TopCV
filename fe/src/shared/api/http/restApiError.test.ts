@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { ApiHttpError } from './apiClient';
-import { buildUserFacingHttpErrorMessage, extractRestErrorFromBody, toUserFacingMessage } from './restApiError';
+import { ApiHttpError, toUserFacingMessage } from './apiClient';
+import { buildUserFacingHttpErrorMessage, extractRestErrorFromBody } from './restApiError';
 
 describe('extractRestErrorFromBody', () => {
   it('reads nested error code and message', () => {

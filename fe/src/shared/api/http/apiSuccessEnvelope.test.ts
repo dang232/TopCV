@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
-import { unwrapApiV1SuccessJson } from './apiSuccessEnvelope';
+import { isApiV1SuccessEnvelope, unwrapApiV1SuccessJson } from './apiSuccessEnvelope';
+
+describe('isApiV1SuccessEnvelope', () => {
+  it('detects canonical envelope', () => {
+    expect(isApiV1SuccessEnvelope({ status: 'success', data: { id: '1' } })).toBe(true);
+    expect(isApiV1SuccessEnvelope({ data: { id: '1' } })).toBe(true);
+  });
+
+  it('rejects non-envelopes', () => {
+    expect(isApiV1SuccessEnvelope({ id: '1', title: 'x' })).toBe(false);
+    expect(isApiV1SuccessEnvelope({ data: { a: 1 }, extra: true })).toBe(false);
+    expect(isApiV1SuccessEnvelope({ data: [1] })).toBe(false);
+    expect(isApiV1SuccessEnvelope(null)).toBe(false);
+  });
+});
 
 describe('unwrapApiV1SuccessJson', () => {
   it('unwraps canonical envelope', () => {

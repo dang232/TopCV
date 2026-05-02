@@ -179,7 +179,8 @@ describe(
       if (ok && body !== undefined && body !== null && typeof body === 'object' && !Array.isArray(body)) {
         const o = body as Record<string, unknown>;
         const keys = Object.keys(o);
-        if (keys.length && keys.every((k) => k === 'data' || k === 'message') && 'data' in o) {
+        const envelopeKeys = new Set(['status', 'message', 'data']);
+        if (keys.length && keys.every((k) => envelopeKeys.has(k)) && 'data' in o) {
           body = o.data as T;
         }
       }

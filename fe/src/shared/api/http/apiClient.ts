@@ -1,4 +1,5 @@
 import { API_V1 } from './constants';
+import { unwrapApiV1SuccessJson } from './apiSuccessEnvelope';
 import { buildUserFacingHttpErrorMessage, extractRestErrorFromBody } from './restApiError';
 import { clearSessionOnUnauthorizedApiResponse, shouldAttachBearerForApiRequest } from './unauthorizedSession';
 import { ensureSessionAccessTokenFresh, refreshAccessTokenSingleFlight, shouldAttempt401Refresh } from '@/src/shared/auth/sessionRefresh';
@@ -16,6 +17,21 @@ export class ApiHttpError extends Error {
     this.status = status;
     this.body = body;
   }
+
+  /** User-visible copy; uses the same redaction rules as {@link buildUserFacingHttpErrorMessage}. */
+  userFacingMessage(): string {
+    return buildUserFacingHttpErrorMessage(this.status, this.body, this.message);
+  }
+}
+
+export function toUserFacingMessage(err: unknown): string {
+  if (err instanceof ApiHttpError) {
+    return err.userFacingMessage();
+  }
+  if (err instanceof TypeError && typeof err.message === 'string' && err.message.toLowerCase().includes('fetch')) {
+    return 'Unable to reach the server. Check your connection and that the API is running.';
+  }
+  return 'Something went wrong. Please try again.';
 }
 
 export type CreateApiClientOptions = {
@@ -238,7 +254,7 @@ export function createApiClient(options: CreateApiClientOptions = {}) {
     };
     pushApiLog(entry);
     logApiDev(entry);
-    return json;
+    return unwrapApiV1SuccessJson<T>(json);
   }
 
   return { apiFetch, apiFetchJson, origin };
