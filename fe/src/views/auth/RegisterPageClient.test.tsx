@@ -38,7 +38,7 @@ describe('RegisterPageClient', () => {
     );
 
     expect(screen.getByRole('heading', { name: /create account/i })).toBeInTheDocument();
-    expect(screen.getByText(/^role$/i)).toBeInTheDocument();
+    expect(screen.getByText(/pick how you’ll use formflow/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^username$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^email$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
@@ -119,6 +119,40 @@ describe('RegisterPageClient', () => {
       }),
     );
     await waitFor(() => expect(apiFetchJson).toHaveBeenCalledWith('/auth/login', expect.any(Object)));
+  });
+
+  it('submits admin role when Admin is selected', async () => {
+    const user = userEvent.setup();
+    const { apiFetchJson } = await import('@/src/shared/api/http/apiClient');
+    vi.mocked(apiFetchJson).mockImplementation(async (path: string) => {
+      if (path === '/auth/register') return { created: true };
+      if (path === '/auth/login')
+        return { accessToken: 'access.token.value', idToken: 'access.token.value', expiresIn: 60 };
+      throw new Error(`Unexpected path: ${path}`);
+    });
+
+    render(
+      <AuthProvider>
+        <RegisterPageClient />
+      </AuthProvider>,
+    );
+
+    await user.click(screen.getByRole('radio', { name: /^admin/i }));
+    await user.type(screen.getByLabelText(/^username$/i), 'alice');
+    await user.type(screen.getByLabelText(/^email$/i), 'alice@example.com');
+    await user.type(screen.getByLabelText(/^password$/i), 'Password1');
+    await user.type(screen.getByLabelText(/confirm password/i), 'Password1');
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() =>
+      expect(apiFetchJson).toHaveBeenCalledWith(
+        '/auth/register',
+        expect.objectContaining({
+          method: 'POST',
+          json: expect.objectContaining({ role: 'admin' }),
+        }),
+      ),
+    );
   });
 
   it('shows backend error message when registration fails', async () => {
