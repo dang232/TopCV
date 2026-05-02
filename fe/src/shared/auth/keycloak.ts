@@ -8,7 +8,7 @@ export {
   missingKeycloakEnvVars,
   sanitizeReturnToPath,
   startKeycloakLogin,
-} from './keycloak';
+} from './keycloak/keycloak';
 
-export type { KeycloakConfig } from './keycloak';
+export type { KeycloakConfig } from './keycloak/keycloak';
 

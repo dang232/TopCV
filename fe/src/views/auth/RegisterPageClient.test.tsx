@@ -38,6 +38,7 @@ describe('RegisterPageClient', () => {
     );
 
     expect(screen.getByRole('heading', { name: /create account/i })).toBeInTheDocument();
+    expect(screen.getByText(/^role$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^username$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^email$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
@@ -110,6 +111,13 @@ describe('RegisterPageClient', () => {
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() => expect(apiFetchJson).toHaveBeenCalledWith('/auth/register', expect.any(Object)));
+    expect(vi.mocked(apiFetchJson)).toHaveBeenCalledWith(
+      '/auth/register',
+      expect.objectContaining({
+        method: 'POST',
+        json: expect.objectContaining({ role: 'staff' }),
+      }),
+    );
     await waitFor(() => expect(apiFetchJson).toHaveBeenCalledWith('/auth/login', expect.any(Object)));
   });
 

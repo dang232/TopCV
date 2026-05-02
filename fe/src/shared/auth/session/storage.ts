@@ -18,6 +18,7 @@ function coerceSession(raw: unknown): AuthSession | null {
   const roles = Array.isArray(obj.roles) ? obj.roles.filter((r) => typeof r === 'string') : [];
   return {
     accessToken: obj.accessToken,
+    refreshToken: typeof obj.refreshToken === 'string' ? obj.refreshToken : undefined,
     idToken: typeof obj.idToken === 'string' ? obj.idToken : undefined,
     expiresAtEpochMs: typeof obj.expiresAtEpochMs === 'number' ? obj.expiresAtEpochMs : undefined,
     roles,

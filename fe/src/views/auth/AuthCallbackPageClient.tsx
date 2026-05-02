@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { buildAuthSessionFromRestTokens } from '@/src/shared/auth/buildAuthSessionFromRestTokens';
 import { writeStoredSession } from '@/src/shared/auth/authStore';
 import { exchangeCodeForSession, getReturnToAndClear } from '@/src/shared/auth/keycloak';
 
@@ -23,8 +24,8 @@ export function AuthCallbackPageClient() {
     if (syncError) return;
 
     exchangeCodeForSession({ code: code as string, state: state as string })
-      .then((session) => {
-        writeStoredSession(session);
+      .then((tokens) => {
+        writeStoredSession(buildAuthSessionFromRestTokens(tokens));
         const returnTo = getReturnToAndClear('/dashboard');
         router.replace(returnTo);
       })

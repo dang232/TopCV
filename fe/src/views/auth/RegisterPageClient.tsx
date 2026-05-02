@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { DEFAULT_SELF_REGISTER_ROLE, TOPCV_REALM_ROLES, type TopcvRealmRole } from '@topcv/shared/auth';
 
 import { useAuth } from '@/src/shared/auth';
 import { Button } from '@/src/shared/ui/Button';
 import { PasswordField } from '@/src/shared/ui/PasswordField';
-import { getConfirmPasswordError, getEmailError, getPasswordError, getUsernameError } from './validators';
+import { sanitizeReturnToPath } from '@/src/shared/auth/keycloak';
+import { getConfirmPasswordError, getEmailError, getRegisterPasswordError, getUsernameError } from './validators';
+import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 export function RegisterPageClient() {
   const { isAuthenticated, register } = useAuth();
@@ -25,12 +28,15 @@ export function RegisterPageClient() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<TopcvRealmRole>(DEFAULT_SELF_REGISTER_ROLE);
+
+  const allowAdminSignup = (process.env.NEXT_PUBLIC_ALLOW_ADMIN_SIGNUP ?? '').trim().toLowerCase() === 'true';
 
   useEffect(() => {
     if (isAuthenticated) router.replace('/dashboard');
   }, [isAuthenticated, router]);
 
-  const next = search.get('next') ?? '/dashboard';
+  const next = sanitizeReturnToPath(search.get('next'), '/dashboard');
 
   const trimmed = useMemo(
     () => ({
@@ -44,10 +50,11 @@ export function RegisterPageClient() {
     () => ({
       email: getEmailError(trimmed.email),
       username: getUsernameError(trimmed.username),
-      password: getPasswordError(password),
+      password: getRegisterPasswordError(password),
       confirmPassword: getConfirmPasswordError(password, confirmPassword),
+      role: TOPCV_REALM_ROLES.includes(role) ? null : 'Role is required.',
     }),
-    [confirmPassword, password, trimmed.email, trimmed.username],
+    [confirmPassword, password, role, trimmed.email, trimmed.username],
   );
 
   const visibleErrors = useMemo(
@@ -56,6 +63,7 @@ export function RegisterPageClient() {
       username: touched.username || hasSubmitted ? computedErrors.username : null,
       password: touched.password || hasSubmitted ? computedErrors.password : null,
       confirmPassword: touched.confirmPassword || hasSubmitted ? computedErrors.confirmPassword : null,
+      role: hasSubmitted ? computedErrors.role : null,
     }),
     [computedErrors, hasSubmitted, touched],
   );
@@ -106,13 +114,27 @@ export function RegisterPageClient() {
                 if (!isFormValid) return;
 
                 try {
-                  await register({ username: trimmed.username, email: trimmed.email, password, returnTo: next });
+                  await register({ username: trimmed.username, email: trimmed.email, password, role, returnTo: next });
                 } catch (err) {
                   setError(err instanceof Error ? err.message : String(err));
                 }
               }}
             >
-              <p className="text-xs text-zinc-500">New accounts are created with the staff role.</p>
+              <p className="text-xs text-zinc-500">
+                Choose a role for the new account. Admin signup is only available when enabled by the backend.
+              </p>
+
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Role</p>
+                <RadioGroup value={role} onValueChange={(v) => setRole(v as TopcvRealmRole)} className="grid grid-cols-2 gap-2">
+                  <RadioGroupItem label="Staff" value="staff" checked={role === 'staff'} />
+                  <RadioGroupItem label="Admin" value="admin" checked={role === 'admin'} disabled={!allowAdminSignup} />
+                </RadioGroup>
+                {visibleErrors.role ? <p className="text-xs text-red-700">{visibleErrors.role}</p> : null}
+                {!allowAdminSignup ? (
+                  <p className="text-xs text-zinc-500">Admin registration is disabled in this environment.</p>
+                ) : null}
+              </div>
 
               <div className="space-y-1">
                 <label className="text-sm font-medium" htmlFor="username">
