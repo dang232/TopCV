@@ -1,3 +1,4 @@
+import { isSessionExpired } from '../jwt';
 import type { AuthSession } from './types';
 import { clearSessionLocalStorage, getSessionStorageKey, readSessionFromLocalStorage, writeSessionToLocalStorage } from './storage';
 
@@ -19,8 +20,17 @@ function ensureInitialized() {
   hasInitialized = true;
 }
 
+function purgeExpiredSessionIfNeeded(): void {
+  if (cachedSession === null) return;
+  if (!isSessionExpired(cachedSession)) return;
+  /** Keep session if refresh can renew access (no BFF — refresh token lives in storage). */
+  if (cachedSession.refreshToken) return;
+  clearSession();
+}
+
 export function readSessionSnapshot(): AuthSession | null {
   ensureInitialized();
+  purgeExpiredSessionIfNeeded();
   return cachedSession;
 }
 
@@ -48,7 +58,11 @@ export function subscribeToSessionChanges(listener: Listener): () => void {
     if (e.key !== getSessionStorageKey()) return;
     cachedSession = readSessionFromLocalStorage();
     hasInitialized = true;
-    notify();
+    if (cachedSession !== null && isSessionExpired(cachedSession) && !cachedSession.refreshToken) {
+      clearSession();
+    } else {
+      notify();
+    }
   };
 
   if (typeof window !== 'undefined') {

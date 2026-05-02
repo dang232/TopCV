@@ -1,4 +1,3 @@
-import { extractRolesFromToken } from '../jwt';
 import { getPublicEnv, missingPublicEnvKeys, type PublicEnvKey } from '@/src/shared/config/publicEnv';
 import { logInfoDev } from '@/src/shared/logging/logger';
 
@@ -10,6 +9,7 @@ export type KeycloakConfig = {
 
 const PKCE_VERIFIER_KEY = 'topcv.auth.pkce.verifier';
 const OIDC_STATE_KEY = 'topcv.auth.oidc.state';
+const RETURN_TO_KEY = 'topcv.auth.returnTo';
 
 const KEYCLOAK_ENV_KEYS = [
   'NEXT_PUBLIC_KEYCLOAK_URL',
@@ -108,6 +108,27 @@ export function buildKeycloakAuthorizationUrl(params: {
   return url.toString();
 }
 
+/**
+ * Prevent open-redirects by only allowing same-app paths.
+ * - Accepts `/path?query#hash`
+ * - Rejects `http(s)://...`, `//...`, and other suspicious inputs.
+ */
+export function sanitizeReturnToPath(value: string | null | undefined, defaultPath = '/dashboard'): string {
+  const raw = (value ?? '').trim();
+  if (!raw) return defaultPath;
+
+  // Block protocol-relative and absolute URLs.
+  if (raw.startsWith('//') || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw)) return defaultPath;
+
+  // Normalize to absolute path within the app.
+  const normalized = raw.startsWith('/') ? raw : `/${raw}`;
+
+  // Guard against oddities that can confuse proxies/routers.
+  if (normalized.includes('\\') || /[\r\n]/.test(normalized)) return defaultPath;
+
+  return normalized;
+}
+
 export async function startKeycloakLogin(options?: { action?: 'login' | 'register'; returnTo?: string; loginHint?: string }) {
   if (typeof window === 'undefined') return;
   const cfg = assertConfig();
@@ -118,9 +139,9 @@ export async function startKeycloakLogin(options?: { action?: 'login' | 'registe
   window.sessionStorage.setItem(PKCE_VERIFIER_KEY, verifier);
   window.sessionStorage.setItem(OIDC_STATE_KEY, state);
   if (options?.returnTo) {
-    window.sessionStorage.setItem('topcv.auth.returnTo', options.returnTo);
+    window.sessionStorage.setItem(RETURN_TO_KEY, sanitizeReturnToPath(options.returnTo));
   } else {
-    window.sessionStorage.removeItem('topcv.auth.returnTo');
+    window.sessionStorage.removeItem(RETURN_TO_KEY);
   }
 
   window.location.href = buildKeycloakAuthorizationUrl({
@@ -174,26 +195,23 @@ export async function exchangeCodeForSession(params: { code: string; state: stri
 
   const json = (await res.json()) as {
     access_token: string;
+    refresh_token?: string;
     id_token?: string;
     expires_in?: number;
   };
 
-  const roles = extractRolesFromToken(json.id_token ?? json.access_token, cfg.clientId);
-  const expiresAtEpochMs =
-    typeof json.expires_in === 'number' && json.expires_in > 0 ? Date.now() + json.expires_in * 1000 : undefined;
-
   return {
     accessToken: json.access_token,
+    refreshToken: json.refresh_token,
     idToken: json.id_token,
-    expiresAtEpochMs,
-    roles,
+    expiresIn: json.expires_in,
   };
 }
 
 export function getReturnToAndClear(defaultPath = '/dashboard'): string {
   if (typeof window === 'undefined') return defaultPath;
-  const v = window.sessionStorage.getItem('topcv.auth.returnTo') ?? defaultPath;
-  window.sessionStorage.removeItem('topcv.auth.returnTo');
+  const v = sanitizeReturnToPath(window.sessionStorage.getItem(RETURN_TO_KEY), defaultPath);
+  window.sessionStorage.removeItem(RETURN_TO_KEY);
   window.sessionStorage.removeItem(PKCE_VERIFIER_KEY);
   window.sessionStorage.removeItem(OIDC_STATE_KEY);
   return v;

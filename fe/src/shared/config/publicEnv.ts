@@ -30,7 +30,10 @@ export function getPublicEnv(): PublicEnv {
   // Missing values are handled by callers (e.g. disabling auth controls + showing a warning).
   const missingIgnoringOptional = missing.filter((k) => k !== 'NEXT_PUBLIC_API_BASE_URL');
 
-  const apiBaseUrl = (readNonEmptyValue(process.env.NEXT_PUBLIC_API_BASE_URL) ?? 'http://localhost:3000').replace(/\/$/, '');
+  const apiBaseUrl = (
+    readNonEmptyValue(process.env.NEXT_PUBLIC_API_BASE_URL) ??
+    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
+  ).replace(/\/$/, '');
   const keycloakUrl = (readNonEmptyValue(process.env.NEXT_PUBLIC_KEYCLOAK_URL) ?? '').replace(/\/$/, '');
   const keycloakRealm = readNonEmptyValue(process.env.NEXT_PUBLIC_KEYCLOAK_REALM) ?? '';
   const keycloakClientId = readNonEmptyValue(process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID) ?? '';

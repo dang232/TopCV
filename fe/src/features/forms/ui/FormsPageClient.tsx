@@ -10,8 +10,8 @@ import { useFormsController } from '../hooks/useFormsController';
 import type { CreateFormDraft } from '../model/draftTypes';
 import { formsApi } from '../api/formsApi';
 import type { FormsRepository } from '../repository/formsRepository';
-import { formsButtonOutline, formsButtonPrimary } from './formsButtonStyles';
 import { hasRole, useAuth } from '@/src/shared/auth';
+import { Button } from '@/src/components/ui/button';
 
 interface FormsPageClientProps {
   repo?: FormsRepository;
@@ -48,35 +48,37 @@ export function FormsPageClient({ repo = formsApi }: FormsPageClientProps) {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-6 py-10 text-zinc-950">
+    <div className="bg-background px-4 py-8 text-foreground sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Dynamic Forms</h1>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-muted-foreground">
               Staff fills active forms in order. Admin manages forms and fields.
             </p>
           </div>
           <div className="flex gap-2">
-            <button
-              className={`${effectiveMode === 'staff' ? formsButtonPrimary : formsButtonOutline} px-3 py-2`}
+            <Button
+              variant={effectiveMode === 'staff' ? 'default' : 'outline'}
+              size="sm"
               onClick={() => {
                 setMode('staff');
                 void controller.setMode('staff');
               }}
             >
               Staff view
-            </button>
+            </Button>
             {isAdmin ? (
-              <button
-                className={`${effectiveMode === 'admin' ? formsButtonPrimary : formsButtonOutline} px-3 py-2`}
+              <Button
+                variant={effectiveMode === 'admin' ? 'default' : 'outline'}
+                size="sm"
                 onClick={() => {
                   setMode('admin');
                   void controller.setMode('admin');
                 }}
               >
                 Admin view
-              </button>
+              </Button>
             ) : null}
           </div>
         </header>
@@ -119,7 +121,7 @@ export function FormsPageClient({ repo = formsApi }: FormsPageClientProps) {
           />
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 

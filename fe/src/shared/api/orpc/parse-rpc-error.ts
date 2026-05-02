@@ -2,6 +2,7 @@ import { ORPCError } from '@orpc/client';
 
 import { ApiHttpError } from '../http/apiClient';
 import { ApiContractViolationError } from '../http/apiContractViolation';
+import { buildUserFacingHttpErrorMessage, extractRestErrorFromBody } from '../http/restApiError';
 
 import type { ApiRpcFailureProps } from './rpc-error.types';
 
@@ -11,14 +12,9 @@ import type { ApiRpcFailureProps } from './rpc-error.types';
 export function parseRpcErrorProps(cause: unknown): ApiRpcFailureProps {
   if (cause instanceof ApiHttpError) {
     const body = cause.body;
-    const message =
-      typeof body === 'object' && body !== null && 'message' in body
-        ? String((body as { message: unknown }).message)
-        : cause.message;
-    const code =
-      typeof body === 'object' && body !== null && 'code' in body
-        ? String((body as { code: unknown }).code)
-        : `HTTP_${cause.status}`;
+    const extracted = extractRestErrorFromBody(body);
+    const code = extracted.code ?? `HTTP_${cause.status}`;
+    const message = buildUserFacingHttpErrorMessage(cause.status, body, extracted.message);
     return {
       code,
       status: cause.status,

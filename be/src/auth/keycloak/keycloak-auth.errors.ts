@@ -6,6 +6,14 @@ export class MisconfigError extends Error {
   }
 }
 
+export class InvalidCredentialsError extends Error {
+  readonly code = 'WRONG_CREDENTIALS' as const;
+  constructor(message = 'Wrong username or password') {
+    super(message);
+    this.name = 'InvalidCredentialsError';
+  }
+}
+
 export class KeycloakUnreachableError extends Error {
   readonly code = 'KEYCLOAK_UNREACHABLE' as const;
   constructor(message: string, options?: { cause?: unknown }) {

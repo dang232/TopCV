@@ -175,7 +175,15 @@ describe(
           body = text as unknown as T;
         }
       }
-      return { ok: response.ok, status: response.status, body };
+      const ok = response.ok;
+      if (ok && body !== undefined && body !== null && typeof body === 'object' && !Array.isArray(body)) {
+        const o = body as Record<string, unknown>;
+        const keys = Object.keys(o);
+        if (keys.length && keys.every((k) => k === 'data' || k === 'message') && 'data' in o) {
+          body = o.data as T;
+        }
+      }
+      return { ok, status: response.status, body };
     }
 
     beforeAll(async () => {
@@ -184,6 +192,23 @@ describe(
       })
         .overrideProvider(KeycloakJwtVerifier)
         .useValue({
+          verifyAuthorizationHeaderDetailed: vi.fn(async (authHeader: string | undefined) => {
+            const header = authHeader?.trim();
+            if (!header) return { user: null, outcome: 'missing_authorization' as const };
+            if (header === 'Bearer admin') {
+              return {
+                user: { sub: 'admin', preferredUsername: 'admin', roles: ['ADMIN'], rawRoles: ['ADMIN'] },
+                outcome: 'ok' as const,
+              };
+            }
+            if (header === 'Bearer staff') {
+              return {
+                user: { sub: 'staff', preferredUsername: 'staff', roles: ['STAFF'], rawRoles: ['STAFF'] },
+                outcome: 'ok' as const,
+              };
+            }
+            return { user: null, outcome: 'jwt_invalid' as const };
+          }),
           verifyAuthorizationHeader: vi.fn(async (authHeader: string | undefined) => {
             const header = authHeader?.trim();
             if (!header) return null;

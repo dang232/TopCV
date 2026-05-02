@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 
 import {
+  InvalidCredentialsError,
   InvalidRoleError,
   KeycloakAccountNotReadyError,
   KeycloakBadResponseError,
@@ -11,7 +12,7 @@ import {
 } from './keycloak-auth.errors';
 import type { KeycloakRealmRole } from './keycloak.types';
 
-type KeycloakTokenResponse = {
+export type KeycloakTokenResponse = {
   access_token: string;
   refresh_token?: string;
   id_token?: string;
@@ -163,11 +164,52 @@ export class KeycloakAuthService {
 
       const error = bodyJson?.error;
       const desc = bodyJson?.error_description ?? bodyJson?.errorDescription;
+
       if (res.status === 400 && error === 'invalid_grant' && typeof desc === 'string' && /account is not fully set up/i.test(desc)) {
         throw new KeycloakAccountNotReadyError('Account is not fully set up', { error, description: desc });
       }
 
-      throw new UnauthorizedException({ message: `Invalid credentials: ${bodyText}` });
+      // Most wrong-username/password failures come back as `invalid_grant`.
+      // Some Keycloak deployments respond with 401 for invalid_grant as well.
+      if ((res.status === 400 || res.status === 401) && error === 'invalid_grant') {
+        throw new InvalidCredentialsError();
+      }
+
+      // `invalid_client` typically means a wrong client secret or a non-existent client.
+      // Treat this as an app/runtime misconfiguration so the outer layer can map it to MISCONFIG.
+      if (res.status === 401 && error === 'invalid_client') {
+        throw new MisconfigError(`Keycloak client authentication failed (${input.clientId})`);
+      }
+
+      throw new KeycloakBadResponseError('Keycloak token request failed', { status: res.status, body: bodyText });
+    }
+    return (await res.json()) as KeycloakTokenResponse;
+  }
+
+  async refreshWithRefreshTokenGrant(input: { refreshToken: string; clientId: string }): Promise<KeycloakTokenResponse> {
+    const token = await this.tokenEndpoint();
+    const params: Record<string, string> = {
+      grant_type: 'refresh_token',
+      refresh_token: input.refreshToken,
+      client_id: input.clientId,
+    };
+    const clientSecret = process.env.KEYCLOAK_CLIENT_SECRET?.trim();
+    if (clientSecret) {
+      params.client_secret = clientSecret;
+    }
+    const res = await this.safeFetch(token.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formUrlEncoded(params),
+    });
+    if (!res.ok) {
+      const bodyText = await readErrorBody(res);
+      const bodyJson = tryParseJson(bodyText) as { error?: string } | undefined;
+      const error = bodyJson?.error;
+      if ((res.status === 400 || res.status === 401) && error === 'invalid_grant') {
+        throw new InvalidCredentialsError();
+      }
+      throw new KeycloakBadResponseError('Keycloak token refresh failed', { status: res.status, body: bodyText });
     }
     return (await res.json()) as KeycloakTokenResponse;
   }

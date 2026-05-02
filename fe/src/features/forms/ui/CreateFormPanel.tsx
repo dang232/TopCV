@@ -17,7 +17,10 @@ import { CSS } from '@dnd-kit/utilities';
 import type { CreateFormDraft } from '../model/draftTypes';
 import { fieldTypes } from '../model/fieldTypes';
 import { addDraftField, moveDraftField, removeDraftField, reorderDraftField } from '../model/draftMutations';
-import { formsButtonOutline, formsButtonPrimary, formsButtonXs } from './formsButtonStyles';
+import { Button } from '@/src/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/card';
+import { Badge } from '@/src/components/ui/badge';
+import { Input } from '@/src/components/ui/input';
 
 interface CreateFormPanelProps {
   draft: CreateFormDraft;
@@ -75,15 +78,18 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-semibold">Dynamic Forms</h1>
-      <p className="mt-2 text-sm text-zinc-600">Create forms (admin) and let staff fill active forms in order.</p>
+    <Card>
+      <CardHeader>
+        <CardTitle>New form</CardTitle>
+        <CardDescription>Create forms (admin) and let staff fill active forms in order.</CardDescription>
+      </CardHeader>
+      <CardContent>
 
-      <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+      <form className="space-y-4" onSubmit={onSubmit}>
         <label className="block text-sm font-medium">
           Title
-          <input
-            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+          <Input
+            className="mt-1"
             value={draft.title}
             onChange={(event) => onDraftChange({ ...draft, title: event.target.value })}
           />
@@ -92,7 +98,7 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
         <label className="block text-sm font-medium">
           Description
           <textarea
-            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             value={draft.description}
             onChange={(event) => onDraftChange({ ...draft, description: event.target.value })}
           />
@@ -101,7 +107,7 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
         <label className="block text-sm font-medium">
           Status
           <select
-            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             value={draft.status}
             onChange={(event) => onDraftChange({ ...draft, status: event.target.value as CreateFormDraft['status'] })}
           >
@@ -110,8 +116,11 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
           </select>
         </label>
 
-        <div className="rounded-xl border border-zinc-200 p-4">
-          <h3 className="text-sm font-semibold">Fields</h3>
+        <div className="rounded-xl border border-border p-4">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold">Fields</h3>
+            <Badge variant="secondary">{draft.fields.length}</Badge>
+          </div>
           {draft.fields.length > 0 ? (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={draft.fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
@@ -119,50 +128,58 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
                   {draft.fields.map((field, index) => (
                     <SortableDraftFieldRow key={field.id} fieldId={field.id}>
                       {({ dragHandleProps, dragAttributes }) => (
-                        <div
-                          className="flex cursor-grab items-center justify-between gap-2 rounded-lg bg-zinc-50 px-3 py-2 text-sm active:cursor-grabbing"
-                          {...dragAttributes}
-                          {...dragHandleProps}
-                        >
-                          <div className="flex min-w-0 items-start gap-2">
+                        <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-card px-3 py-3 text-sm shadow-sm">
+                          <div className="flex min-w-0 items-start gap-3">
+                            <button
+                              type="button"
+                              className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                              aria-label={`Reorder field ${index + 1}: ${field.label}`}
+                              {...dragAttributes}
+                              {...dragHandleProps}
+                            >
+                              ⠿
+                            </button>
                             <div className="min-w-0">
                               <div className="truncate font-medium">
                                 {index + 1}. {field.label}
                               </div>
-                              <div className="text-zinc-600">
+                              <div className="text-muted-foreground">
                                 {field.type}
                                 {field.required ? ' · required' : ' · optional'}
                                 {field.type === FieldType.Select ? ` · ${(field.options ?? []).length} option(s)` : ''}
                               </div>
                             </div>
                           </div>
-                          <div className="flex shrink-0 gap-1">
-                            <button
-                              className={`${formsButtonOutline} ${formsButtonXs}`}
+                          <div className="flex shrink-0 flex-wrap gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
                               type="button"
                               onClick={() => onDraftChange(moveDraftField(draft, index, -1))}
                               disabled={index === 0}
                               onPointerDownCapture={(e) => e.stopPropagation()}
                             >
                               Up
-                            </button>
-                            <button
-                              className={`${formsButtonOutline} ${formsButtonXs}`}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               type="button"
                               onClick={() => onDraftChange(moveDraftField(draft, index, 1))}
                               disabled={index === draft.fields.length - 1}
                               onPointerDownCapture={(e) => e.stopPropagation()}
                             >
                               Down
-                            </button>
-                            <button
-                              className={`${formsButtonOutline} ${formsButtonXs}`}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               type="button"
                               onClick={() => onDraftChange(removeDraftField(draft, index))}
                               onPointerDownCapture={(e) => e.stopPropagation()}
                             >
                               Remove
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -172,14 +189,14 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
               </SortableContext>
             </DndContext>
           ) : (
-            <p className="mt-2 text-sm text-zinc-600">No fields added yet. Add at least one field below.</p>
+            <p className="mt-2 text-sm text-muted-foreground">No fields added yet. Add at least one field below.</p>
           )}
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="block text-sm font-medium sm:col-span-2">
               Field label
-              <input
-                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+              <Input
+                className="mt-1"
                 value={draft.fieldLabel}
                 onChange={(event) => onDraftChange({ ...draft, fieldLabel: event.target.value })}
               />
@@ -188,7 +205,7 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
             <label className="block text-sm font-medium">
               Field type
               <select
-                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={draft.fieldType}
                 onChange={(event) =>
                   onDraftChange({ ...draft, fieldType: event.target.value as CreateFormDraft['fieldType'] })
@@ -215,8 +232,8 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
           {draft.fieldType === FieldType.Select ? (
             <label className="mt-3 block text-sm font-medium">
               Select options
-              <input
-                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+              <Input
+                className="mt-1"
                 placeholder="Engineering, Sales"
                 value={draft.selectOptions}
                 onChange={(event) => onDraftChange({ ...draft, selectOptions: event.target.value })}
@@ -224,24 +241,26 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
             </label>
           ) : null}
 
-          <button
-            className={`mt-3 ${formsButtonOutline} px-3 py-2`}
+          <Button
+            className="mt-3"
+            variant="outline"
             type="button"
             onClick={() => onDraftChange(addDraftField(draft))}
             disabled={!draft.fieldLabel.trim()}
           >
             Add field
-          </button>
+          </Button>
         </div>
 
-        {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-        {message ? <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p> : null}
+        {error ? <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
+        {message ? <p className="rounded-lg border border-border bg-muted p-3 text-sm">{message}</p> : null}
 
-        <button className={`w-full ${formsButtonPrimary} px-4 py-2`} type="submit">
+        <Button className="w-full" type="submit">
           Create form
-        </button>
+        </Button>
       </form>
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 

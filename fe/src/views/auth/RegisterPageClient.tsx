@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { DEFAULT_SELF_REGISTER_ROLE, TOPCV_REALM_ROLES, type TopcvRealmRole } from '@topcv/shared/auth';
 
 import { useAuth } from '@/src/shared/auth';
 import { Button } from '@/src/shared/ui/Button';
 import { PasswordField } from '@/src/shared/ui/PasswordField';
-import { getConfirmPasswordError, getEmailError, getPasswordError, getUsernameError } from './validators';
+import { sanitizeReturnToPath } from '@/src/shared/auth/keycloak';
+import { getConfirmPasswordError, getEmailError, getRegisterPasswordError, getUsernameError } from './validators';
+import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 export function RegisterPageClient() {
   const { isAuthenticated, register } = useAuth();
@@ -25,12 +28,13 @@ export function RegisterPageClient() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<TopcvRealmRole>(DEFAULT_SELF_REGISTER_ROLE);
 
   useEffect(() => {
     if (isAuthenticated) router.replace('/dashboard');
   }, [isAuthenticated, router]);
 
-  const next = search.get('next') ?? '/dashboard';
+  const next = sanitizeReturnToPath(search.get('next'), '/dashboard');
 
   const trimmed = useMemo(
     () => ({
@@ -44,10 +48,11 @@ export function RegisterPageClient() {
     () => ({
       email: getEmailError(trimmed.email),
       username: getUsernameError(trimmed.username),
-      password: getPasswordError(password),
+      password: getRegisterPasswordError(password),
       confirmPassword: getConfirmPasswordError(password, confirmPassword),
+      role: TOPCV_REALM_ROLES.includes(role) ? null : 'Role is required.',
     }),
-    [confirmPassword, password, trimmed.email, trimmed.username],
+    [confirmPassword, password, role, trimmed.email, trimmed.username],
   );
 
   const visibleErrors = useMemo(
@@ -56,6 +61,7 @@ export function RegisterPageClient() {
       username: touched.username || hasSubmitted ? computedErrors.username : null,
       password: touched.password || hasSubmitted ? computedErrors.password : null,
       confirmPassword: touched.confirmPassword || hasSubmitted ? computedErrors.confirmPassword : null,
+      role: hasSubmitted ? computedErrors.role : null,
     }),
     [computedErrors, hasSubmitted, touched],
   );
@@ -71,7 +77,7 @@ export function RegisterPageClient() {
             <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">FormFlow</p>
             <h2 className="mt-4 text-2xl font-semibold tracking-tight">Start building with FormFlow</h2>
             <p className="mt-3 text-sm leading-6 text-zinc-600">
-              Create your account in-app. We’ll create the user in Keycloak via the backend.
+              Create your account here and start using FormFlow right away.
             </p>
             <div className="mt-8 space-y-3 text-sm text-zinc-600">
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
@@ -106,13 +112,39 @@ export function RegisterPageClient() {
                 if (!isFormValid) return;
 
                 try {
-                  await register({ username: trimmed.username, email: trimmed.email, password, returnTo: next });
+                  await register({ username: trimmed.username, email: trimmed.email, password, role, returnTo: next });
                 } catch (err) {
                   setError(err instanceof Error ? err.message : String(err));
                 }
               }}
             >
-              <p className="text-xs text-zinc-500">New accounts are created with the staff role.</p>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-zinc-900">Pick how you’ll use FormFlow</p>
+                <p className="text-xs text-zinc-500">Choose your role. You can ask an organization admin to change it later if needed.</p>
+                <RadioGroup value={role} onValueChange={(v) => setRole(v as TopcvRealmRole)} className="grid grid-cols-2 gap-2">
+                  <RadioGroupItem
+                    label={
+                      <span className="flex flex-col items-start gap-0.5 text-left">
+                        <span>Staff</span>
+                        <span className="text-xs font-normal text-zinc-600">Work with forms day to day.</span>
+                      </span>
+                    }
+                    value="staff"
+                    checked={role === 'staff'}
+                  />
+                  <RadioGroupItem
+                    label={
+                      <span className="flex flex-col items-start gap-0.5 text-left">
+                        <span>Admin</span>
+                        <span className="text-xs font-normal text-zinc-600">Manage people, access, and settings.</span>
+                      </span>
+                    }
+                    value="admin"
+                    checked={role === 'admin'}
+                  />
+                </RadioGroup>
+                {visibleErrors.role ? <p className="text-xs text-red-700">{visibleErrors.role}</p> : null}
+              </div>
 
               <div className="space-y-1">
                 <label className="text-sm font-medium" htmlFor="username">
@@ -174,7 +206,7 @@ export function RegisterPageClient() {
                   setTouched((prev) => (prev.password ? prev : { ...prev, password: true }));
                 }}
                 error={visibleErrors.password}
-                helpText="Password is sent to the backend to create your Keycloak user."
+                helpText="Your password is verified securely when you create your account."
               />
 
               <PasswordField

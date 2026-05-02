@@ -6,6 +6,7 @@ export {
   keycloakConfig,
   keycloakLogoutUrl,
   missingKeycloakEnvVars,
+  sanitizeReturnToPath,
   startKeycloakLogin,
 } from './keycloak';
 

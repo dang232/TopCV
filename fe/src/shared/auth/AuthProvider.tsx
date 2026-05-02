@@ -1,11 +1,14 @@
 'use client';
 
 import React, { createContext, useContext, useMemo, useSyncExternalStore } from 'react';
-import { TOPCV_REALM_ROLES } from '@topcv/shared/auth';
+import { DEFAULT_SELF_REGISTER_ROLE } from '@topcv/shared/auth';
+import type { TopcvRealmRole } from '@topcv/shared/auth';
 
+import { buildAuthSessionFromRestTokens } from './buildAuthSessionFromRestTokens';
 import { clearStoredSession, readStoredSession, subscribeToSession, writeStoredSession, type AuthSession } from './authStore';
+import { API_V1 } from '@/src/shared/api/http/constants';
 import { ApiHttpError, apiFetchJson } from '@/src/shared/api/http/apiClient';
-import { extractRolesFromToken } from './jwt';
+import { getPublicEnv } from '@/src/shared/config/publicEnv';
 import { logErrorDev } from '@/src/shared/logging/logger';
 import { normalizeRoles } from './roles';
 
@@ -14,7 +17,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   roles: string[];
   login: (input: { usernameOrEmail: string; password: string; returnTo?: string }) => Promise<void>;
-  register: (input: { username: string; email: string; password: string; returnTo?: string }) => Promise<void>;
+  register: (input: { username: string; email: string; password: string; role?: TopcvRealmRole; returnTo?: string }) => Promise<void>;
   logout: () => void;
 };
 
@@ -48,27 +51,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         logErrorDev('[auth.login] request failed', undefined, err);
         if (err instanceof ApiHttpError) {
-          // Prefer backend-provided message (e.g. 409 ACCOUNT_NOT_READY).
           if (err.message) throw new Error(err.message);
-          throw new Error(`Login failed (${err.status})`);
+          throw new Error(`Sign-in failed (${err.status}).`);
         }
-        throw new Error('Login failed');
+        if (err instanceof TypeError && /fetch|network/i.test(String(err.message))) {
+          throw new Error('Unable to reach the server. Check your connection and that the API is running.');
+        }
+        throw new Error('Sign-in failed.');
       }
 
-      // Keycloak roles are reliably present on the access token (`realm_access`, `resource_access`).
-      // The ID token often omits those claims, which would make the UI think the user has no roles.
-      const tokenForRoles = res.accessToken || res.idToken;
-      const expiresAtEpochMs =
-        typeof res.expiresIn === 'number' && res.expiresIn > 0 ? Date.now() + res.expiresIn * 1000 : undefined;
-
-      const extractedRoles = extractRolesFromToken(tokenForRoles ?? '', process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID);
-
-      writeStoredSession({
-        accessToken: res.accessToken,
-        idToken: res.idToken,
-        expiresAtEpochMs,
-        roles: normalizeRoles(extractedRoles),
-      });
+      writeStoredSession(buildAuthSessionFromRestTokens(res));
     };
 
     return {
@@ -84,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               username: input.username,
               email: input.email,
               password: input.password,
-              role: TOPCV_REALM_ROLES[1],
+              role: input.role ?? DEFAULT_SELF_REGISTER_ROLE,
             },
           });
         } catch (err) {
@@ -92,11 +84,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (err instanceof ApiHttpError && err.message) {
             throw new Error(err.message);
           }
-          throw new Error('Registration failed');
+          if (err instanceof TypeError && /fetch|network/i.test(String(err.message))) {
+            throw new Error('Unable to reach the server. Check your connection and that the API is running.');
+          }
+          throw new Error('Registration failed.');
         }
         await doLogin({ usernameOrEmail: input.email, password: input.password, returnTo: input.returnTo });
       },
       logout: () => {
+        const snap = readStoredSession();
+        const rt = snap?.refreshToken;
+        if (typeof window !== 'undefined' && rt) {
+          const origin = getPublicEnv().apiBaseUrl.replace(/\/$/, '');
+          void fetch(`${origin}${API_V1}/auth/logout`, {
+            method: 'POST',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken: rt }),
+          });
+        }
         clearStoredSession();
       },
     };

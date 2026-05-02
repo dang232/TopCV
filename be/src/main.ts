@@ -3,6 +3,7 @@ import 'reflect-metadata';
 
 import { NestFactory } from '@nestjs/core';
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
+import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 
@@ -25,7 +26,9 @@ function corsOptions(): CorsOptions {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableShutdownHooks();
   app.enableCors(corsOptions());
+  app.use(helmet());
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();

@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FieldType, FormStatus, type SubmissionDto } from '@topcv/shared';
 
+import { resetFormsListPageCoalescingForTests } from './hooks/useFormsController';
 import type { FormsRepository } from './repository/formsRepository';
 import { AuthProvider } from '@/src/shared/auth';
 import { writeStoredSession } from '@/src/shared/auth/authStore';
@@ -42,6 +43,10 @@ function makeApi(): FormsRepository {
 }
 
 describe('FormsPageClient', () => {
+  beforeEach(() => {
+    resetFormsListPageCoalescingForTests();
+  });
+
   function renderWithRole(role: 'staff' | 'admin' | 'ADMIN' | 'STAFF', repo: FormsRepository) {
     writeStoredSession({ accessToken: 'token', roles: [role] });
     return render(

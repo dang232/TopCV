@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildKeycloakAuthorizationUrl } from './keycloak';
+import { buildKeycloakAuthorizationUrl, sanitizeReturnToPath } from './keycloak';
 
 describe('buildKeycloakAuthorizationUrl', () => {
   it('builds a PKCE auth URL for login', () => {
@@ -41,6 +41,22 @@ describe('buildKeycloakAuthorizationUrl', () => {
     expect(parsed.searchParams.get('prompt')).toBeNull();
     expect(parsed.searchParams.get('screen_hint')).toBe('signup');
     expect(parsed.searchParams.get('login_hint')).toBe('user@example.com');
+  });
+});
+
+describe('sanitizeReturnToPath', () => {
+  it('allows app-relative paths', () => {
+    expect(sanitizeReturnToPath('/dashboard')).toBe('/dashboard');
+    expect(sanitizeReturnToPath('/forms?page=1#top')).toBe('/forms?page=1#top');
+  });
+
+  it('normalizes missing leading slash', () => {
+    expect(sanitizeReturnToPath('dashboard')).toBe('/dashboard');
+  });
+
+  it('blocks absolute and protocol-relative URLs', () => {
+    expect(sanitizeReturnToPath('https://evil.example/phish', '/dashboard')).toBe('/dashboard');
+    expect(sanitizeReturnToPath('//evil.example/phish', '/dashboard')).toBe('/dashboard');
   });
 });
 

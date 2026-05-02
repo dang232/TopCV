@@ -28,7 +28,14 @@ export function getLoginHintError(loginHint: string) {
   return null;
 }
 
-export function getPasswordError(password: string) {
+/** Login: only ensure the user entered something; strength is enforced at registration / IdP. */
+export function getLoginPasswordError(password: string) {
+  if (!password.trim()) return 'Password is required.';
+  return null;
+}
+
+/** Registration: enforce password policy before account creation. */
+export function getRegisterPasswordError(password: string) {
   if (!password) return 'Password is required.';
   if (password.length < 8) return AUTH_VALIDATION_MESSAGES.passwordComplexity;
   const hasUpper = /[A-Z]/.test(password);
