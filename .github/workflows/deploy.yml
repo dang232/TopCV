@@ -1,0 +1,24 @@
+# GitHub Actions CI/CD Configuration
+
+This workflow file outlines the CI process for the TopCV application. The CI process involves checking out the code, setting up dependencies, and executing type checks, linting, and tests for both the frontend and backend components.
+
+## Workflow Steps
+
+1. **Checkout the Code**: Use `actions/checkout@v4` to check out the repository code.
+2. **Setup pnpm**: Use `pnpm/action-setup@v4` to set up the pnpm package manager.
+3. **Setup Node.js**: Configure the Node.js environment with version 20 and enable dependency caching.
+4. **Install Dependencies**: Install all project dependencies using pnpm.
+5. **Run Type Checks**: Execute type checking for shared components, backend, and frontend.
+6. **Run Tests**: Execute unit tests for both backend and frontend components.
+7. **Playwright E2E Tests**: Finally, run end-to-end tests using Playwright in a separate job that depends on the unit tests to succeed.
+
+## Error Handling
+
+- The workflow uses `|| exit 1` in commands to ensure that any step failing will stop further execution and mark the CI as failed.
+- Ensure that all exit statuses are correctly returned to avoid blocking deployment due to failed checks.
+
+## Next Steps
+
+1. Verify that the configuration is in place and aligns with the documentation provided.
+2. Review any environmental variables that need to be supplied for successful execution.
+3. Commit these changes to trigger a new CI run and validate deployment capabilities by syncing with the setup documentation.
