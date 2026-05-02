@@ -5,12 +5,15 @@ import { defineConfig } from 'vitest/config';
 const fromRoot = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 export default defineConfig({
+  cacheDir: './node_modules/.vite-vitest',
   plugins: [react()],
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
+    fileParallelism: false,
+    pool: 'forks',
   },
   resolve: {
     // Use an ordered alias array so subpath matches win over the base package alias.
