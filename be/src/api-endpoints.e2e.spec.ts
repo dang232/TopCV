@@ -135,7 +135,7 @@ describe(
     timeout: 60_000,
   },
   () => {
-    let app: INestApplication;
+    let app: INestApplication | undefined;
     let baseUrl: string;
 
     const indexedFormIds: string[] = [];
@@ -243,7 +243,7 @@ describe(
     });
 
     afterAll(async () => {
-      await app.close();
+      await app?.close();
     });
 
     beforeEach(() => {

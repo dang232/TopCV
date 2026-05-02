@@ -6,7 +6,7 @@ import noDeprecatedSymbolRule from '../eslint-rules/no-deprecated-symbol.mjs';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs', 'vitest.config.ts', 'dist/**', 'build/**', 'coverage/**'],
+    ignores: ['eslint.config.mjs', 'vitest.config.ts', 'vitest.setup.ts', 'dist/**', 'build/**', 'coverage/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
