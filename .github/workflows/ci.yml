@@ -8,9 +8,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:3000
+  NEXT_PUBLIC_KEYCLOAK_URL: http://127.0.0.1:8080
+  NEXT_PUBLIC_KEYCLOAK_REALM: ci
+  NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ci
+
 jobs:
   ci:
-    name: Lint, typecheck, test, build
+    name: Install and check
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -32,22 +38,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Unit tests
-        run: pnpm test
-
-      - name: Build backend
-        run: pnpm --filter be build
-
-      - name: Build frontend
-        run: pnpm --filter my-app build
-        env:
-          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:3000
-          NEXT_PUBLIC_KEYCLOAK_URL: http://127.0.0.1:8080
-          NEXT_PUBLIC_KEYCLOAK_REALM: ci
-          NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ci
+      - name: Typecheck, lint, test, build
+        run: pnpm check
