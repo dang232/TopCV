@@ -38,8 +38,9 @@ function getKeycloakClientId(): string {
 
 }
 
+/** Allowed when unset (demo). Only `ALLOW_ADMIN_SIGNUP=false` blocks admin self-signup. */
 function allowAdminSignup(): boolean {
-  return (process.env.ALLOW_ADMIN_SIGNUP ?? '').trim().toLowerCase() === 'true';
+  return (process.env.ALLOW_ADMIN_SIGNUP ?? '').trim().toLowerCase() !== 'false';
 }
 
 
