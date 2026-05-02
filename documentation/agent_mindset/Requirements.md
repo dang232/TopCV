@@ -56,6 +56,58 @@ Provide a simple dashboard that helps each role navigate and understand system s
 
 > Note: The remainder of this document is the original functional specification for the form builder. The Keycloak + roles + dashboard scope above is the required product framing for this codebase.
 
+### 0.5. Technology stack
+
+Versions below are the **declared** ranges or pins from workspace `package.json` files (run `pnpm list` locally for the exact resolved tree).
+
+**Frontend** (`fe/`, pnpm package `my-app`)
+
+- **Next.js** `16.2.4` (App Router under `fe/app/`), **React** `19.2.4`, **TypeScript** `^5`.
+- **Styling**: **Tailwind CSS** `^4` with `@tailwindcss/postcss` `^4`.
+- **API / contracts**: **oRPC** client `@orpc/client` `^1.14.0`; **Zod** `^4.4.1`; workspace package `@topcv/shared`.
+- **UI / UX**: **@dnd-kit** (`core`, `sortable`, `utilities`) for reordering.
+- **Dev server**: `next dev -p 3001` (see `fe/package.json`). `fe/next.config.ts` sets **Turbopack** `root` to the monorepo root, **transpiles** `@topcv/shared`, security **headers**, and **rewrites** `/rpc/*` to the backend (default `API_PROXY_TARGET` `http://localhost:3000`).
+- **Tests / quality**: **Vitest** `^4`, **Testing Library** (`@testing-library/react`, `jest-dom`), **Playwright** `^1.59`; **ESLint** `^9` with **eslint-config-next** `16.2.4`.
+
+**Backend** (`be/`)
+
+- **NestJS** `^11.1.19` (`@nestjs/common`, `core`, `platform-express`), **TypeScript** `^5`, dev entry **`tsx watch src/main.ts`** (see `be/package.json`; bootstrap in `be/src/main.ts` — CORS, **Helmet**, global logging interceptor).
+- **Persistence**: **MikroORM** `^7.0.13` + **`@mikro-orm/mongodb`** (MongoDB).
+- **Supporting services (app runtime)**: **ioredis** `^5.10.1`; **@elastic/elasticsearch** `^8.19.1` (client major aligned with compose ES image — see repo README if versions drift).
+- **API / contracts**: **oRPC** server `@orpc/server` `^1.14.0`; **Zod** `^4.4.1`; `@topcv/shared`.
+- **Security / resilience**: **jose** `^6.1.0` (JWT / JWKS), **@nestjs/throttler** `^6.5.0`, **dotenv**.
+- **Tests / quality**: **Vitest** `^4`, **Supertest** `^7`, **@nestjs/testing**; **ESLint** `^10` + **typescript-eslint** `^8`, **Prettier** `^3`.
+
+**Shared** (`shared/`, `@topcv/shared`)
+
+- **TypeScript** `^5`, **Zod** `^4.4.1`, **Vitest** `^4`.
+- **Published entrypoints** (see `shared/package.json` `exports`): root, `./auth`, `./forms`, `./transport`, `./user` — shared schemas/types and transport contracts consumed by `fe` and `be`.
+
+**Infrastructure** (local **Docker Compose** at repo root)
+
+- **MongoDB** `7` (`mongodb` service; default URL in `be/.env.example`).
+- **Redis** `7-alpine` with AOF (`redis` service).
+- **Elasticsearch** `8.15.3` (single-node, security disabled for local dev — see compose file).
+- **Keycloak** `26.2.0` with **PostgreSQL** `16-alpine` for Keycloak’s own DB; realm import from `infrastructure/keycloak/topcv.json`.
+
+**Tooling**
+
+- **pnpm** `10.33.2` (**workspaces**: `be`, `fe`, `shared`) — root scripts: `dev:be`, `dev:fe`, `services:up` / `services:down`, aggregated `test`, `typecheck`, `lint`.
+- **Node**: backend `type: module`; root `package.json` `type: commonjs` (workspace orchestration only).
+
+**Authentication** (stack pieces; behavior is §0.1)
+
+- **Keycloak** (OIDC) as IdP; backend validates access tokens via **JWKS** (`KEYCLOAK_ISSUER`, optional `KEYCLOAK_JWKS_URL`, `KEYCLOAK_CLIENT_ID`, etc. in `be/.env.example`).
+- Frontend session/token handling lives under `fe/src/shared/auth/` (store, Keycloak helpers, callbacks) — align implementation with the storage guidance in §0.1.
+
+#### Repository layout
+
+- **`/`** — pnpm workspace root, `docker-compose.yml`, root scripts.
+- **`fe/`** — Next.js app (`app/` router, `src/` for features and shared UI/auth/API helpers).
+- **`be/`** — NestJS app (`src/` modules, guards, Keycloak integration, oRPC + REST surfaces as implemented).
+- **`shared/`** — cross-cutting **Zod** schemas and **oRPC**/`transport` contracts shared by frontend and backend.
+- **`infrastructure/`** — Keycloak realm import and related ops assets.
+
 ## 1. Tổng Quan
 Bạn sẽ xây dựng một hệ thống quản lý form đơn giản, cho phép admin tạo các form với nhiều loại trường dữ liệu khác nhau (text, date, color...), và nhân viên SW có thể điền vào các form đó theo đúng thứ tự. Chúng tôi muốn đánh giá:  
 - Khả năng thiết kế và tổ chức code rõ ràng, dễ đọc  
