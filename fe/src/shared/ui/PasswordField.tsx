@@ -1,4 +1,8 @@
-import { useId, useState } from 'react';
+import { useId, useState } from "react";
+
+import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
+import { cn } from "@/src/lib/utils";
 
 type PasswordFieldProps = {
   id: string;
@@ -66,7 +70,7 @@ export function PasswordField({
   const reactId = useId();
   const errorId = `${id}-${reactId}-error`;
   const helpId = `${id}-${reactId}-help`;
-  const describedBy = [error ? errorId : null, helpText ? helpId : null].filter(Boolean).join(' ') || undefined;
+  const describedBy = [error ? errorId : null, helpText ? helpId : null].filter(Boolean).join(" ") || undefined;
   const [visible, setVisible] = useState(false);
 
   return (
@@ -75,10 +79,14 @@ export function PasswordField({
         {label}
       </label>
       <div className="relative">
-        <input
+        <Input
           id={id}
-          type={visible ? 'text' : 'password'}
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 pr-12 text-sm outline-none ring-indigo-700/30 focus:ring-4"
+          type={visible ? "text" : "password"}
+          className={cn(
+            // keep space for the toggle button so text never sits underneath it
+            "pr-10",
+            error ? "border-destructive focus-visible:ring-destructive" : null,
+          )}
           autoComplete={autoComplete}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -87,23 +95,24 @@ export function PasswordField({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
         />
-        <button
-          type="button"
-          className="absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-xl p-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-accent-foreground"
           onClick={() => setVisible((v) => !v)}
           disabled={disabled}
-          aria-label={visible ? 'Hide password' : 'Show password'}
+          aria-label={visible ? "Hide password" : "Show password"}
         >
           <EyeIcon visible={visible} />
-        </button>
+        </Button>
       </div>
       {helpText ? (
-        <p id={helpId} className="text-xs text-zinc-500">
+        <p id={helpId} className="text-xs text-muted-foreground">
           {helpText}
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} className="text-xs text-red-700">
+        <p id={errorId} className="text-xs text-destructive">
           {error}
         </p>
       ) : null}

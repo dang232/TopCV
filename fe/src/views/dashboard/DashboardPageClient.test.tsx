@@ -24,7 +24,7 @@ describe('DashboardPageClient', () => {
       </AuthProvider>,
     );
 
-    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /form management portal/i })).toBeInTheDocument();
   });
 
