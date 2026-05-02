@@ -99,7 +99,8 @@ export const FormIdInputSchema = z.object({
 });
 
 export const SearchFormsInputSchema = z.object({
-  query: z.string().trim().min(1),
+  // Keep search queries bounded to reduce Elasticsearch abuse (expensive queries / large payloads).
+  query: z.string().trim().min(1).max(200),
 });
 
 export const FormAnswerValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);

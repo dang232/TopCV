@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { FieldType } from './form.enum';
-import { CreateFormInputSchema, SubmitFormInputSchema, UpdateFormInputSchema, submissionAnswerKey } from './form.schema';
+import { CreateFormInputSchema, SearchFormsInputSchema, SubmitFormInputSchema, UpdateFormInputSchema, submissionAnswerKey } from './form.schema';
 
 const baseField = {
   label: 'Customer name',
@@ -80,5 +80,17 @@ describe('SubmitFormInputSchema', () => {
     });
 
     expect(result.success).toBe(true);
+  });
+});
+
+describe('SearchFormsInputSchema', () => {
+  it('accepts a non-empty query', () => {
+    const result = SearchFormsInputSchema.safeParse({ query: 'employee onboarding' });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects excessively long queries', () => {
+    const result = SearchFormsInputSchema.safeParse({ query: 'x'.repeat(201) });
+    expect(result.success).toBe(false);
   });
 });
