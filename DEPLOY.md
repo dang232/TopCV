@@ -148,6 +148,43 @@ Redeploy after changing `NEXT_PUBLIC_*` (they are baked in at build time).
 
 ---
 
+## Option D — Railway (TopCV `be` + `my-app` services)
+
+Railway does **not** create Mongo, Redis, Elasticsearch, or Keycloak for you. Those must exist as **separate services** in the same project before the API can stay up.
+
+### Already configured in `production`
+
+Variables were applied with the Railway CLI for **`be`** and **`my-app`**. Important details:
+
+| Piece | How it is wired |
+|------|------------------|
+| **`be` → Mongo / Redis** | `MONGODB_URL=${{MongoDB.MONGO_URL}}` and `REDIS_URL=${{Redis.REDIS_URL}}`. Use the default plugin names **`MongoDB`** and **`Redis`** (or change the reference to match your canvas name). |
+| **`be` → Elasticsearch** | `ELASTICSEARCH_URL=http://${{Elasticsearch.RAILWAY_PRIVATE_DOMAIN}}:${{Elasticsearch.PORT}}` on **`be`**. The ES service on the canvas should be named **`Elasticsearch`** (matches Railway’s service reference). It resolves to the private hostname (e.g. `elasticsearch.railway.internal:9200`). |
+| **`be` CORS** | `FRONTEND_ORIGIN` references **`my-app`**’s public domain. |
+| **`be` → Keycloak (JWT)** | Temporary placeholders (`auth-local.invalid`) until Keycloak is deployed. Replace with your **real public** issuer + JWKS after Keycloak has a generated Railway URL (tokens use the **public** issuer). |
+| **`my-app` → API** | `NEXT_PUBLIC_API_BASE_URL` points at the **`be`** public URL. |
+| **`my-app` → Keycloak (browser)** | `NEXT_PUBLIC_KEYCLOAK_URL` must be a **browser-reachable** URL; update when Keycloak is live. |
+
+### One-time canvas checklist
+
+1. **Database → MongoDB** → keep or use service name **`MongoDB`** so `${{MongoDB.MONGO_URL}}` resolves (adjust the variable if you rename it).
+2. **Database → Redis** → rename service to **`Redis`**.
+3. **Elasticsearch** → Docker image (e.g. `elasticsearch:9` or match `docker-compose.yml`), **service name** **`Elasticsearch`**, port **9200** / private networking, single-node env similar to compose.
+4. **Keycloak** (+ Postgres for KC DB if you mirror compose) → deploy, import realm from `infrastructure/keycloak/topcv.json`, set hostname / public URL, generate a Railway domain, then set on **`be`**:
+
+   - `KEYCLOAK_ISSUER=https://<your-keycloak-host>/realms/topcv`
+   - `KEYCLOAK_JWKS_URL=https://<your-keycloak-host>/realms/topcv/protocol/openid-connect/certs`
+
+   and on **`my-app`**:
+
+   - `NEXT_PUBLIC_KEYCLOAK_URL=https://<your-keycloak-host>`
+
+   Redeploy **`my-app`** after changing any `NEXT_PUBLIC_*`.
+
+5. Redeploy **`be`** after Mongo, Redis, and Elasticsearch resolve (references become non-empty).
+
+---
+
 ## What we ship in-repo
 
 | File | Purpose |

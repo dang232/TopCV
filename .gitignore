@@ -34,6 +34,9 @@ dist/
 .next/
 coverage/
 
+# Cursor MCP (may contain API tokens)
+.cursor/mcp.json
+
 # Local environment files
 .env
 .env.*

@@ -13,6 +13,52 @@
 | **`documentation/`** | Specs, mindset, and project docs (authoritative product/stack section: [documentation/agent_mindset/Requirements.md](documentation/agent_mindset/Requirements.md)) |
 | **`docker-compose.yml`** | Repo root: MongoDB 7, Redis 7 (AOF), Elasticsearch 8.15.3, Keycloak 26.2.0 + PostgreSQL 16 for Keycloak’s DB |
 
+## Production-style architecture (e.g. Railway)
+
+Typical cloud layout for this repo: one **Next.js** frontend (`my-app`), one **NestJS** API (`be`), and managed data/auth/search services. The diagram matches how services connect logically (lines on the canvas mirror env-variable wiring and HTTP/OIDC calls).
+
+```mermaid
+flowchart TB
+  subgraph client["Public edge"]
+    fe["my-app · Next.js"]
+  end
+  subgraph api["Application"]
+    be["be · NestJS"]
+  end
+  subgraph identity["Identity"]
+    kc["Keycloak"]
+    pg[("Postgres · Keycloak DB")]
+  end
+  subgraph data["Data & search"]
+    mongo[("MongoDB · app data")]
+    redis[("Redis · form cache")]
+    es[("Elasticsearch · search index")]
+    kb["Kibana · ES UI"]
+  end
+
+  fe -->|"REST / api"| be
+  fe -->|"OIDC login"| kc
+  be --> mongo
+  be --> redis
+  be --> es
+  be -->|"JWT verify · Admin API"| kc
+  kc --> pg
+  kb --> es
+```
+
+| Connection | Purpose |
+|------------|---------|
+| **my-app → be** | REST API (`NEXT_PUBLIC_API_BASE_URL`), authenticated requests with bearer tokens |
+| **my-app → Keycloak** | Browser OIDC (login/register flows; `NEXT_PUBLIC_KEYCLOAK_*`) |
+| **be → MongoDB** | Primary persistence (forms, submissions, aggregates via MikroORM) |
+| **be → Redis** | Form read caching + health probe (`REDIS_URL`) |
+| **be → Elasticsearch** | Form/search indexing and queries (`ELASTICSEARCH_URL`) |
+| **be → Keycloak** | JWT validation (JWKS); registration/admin flows (`KEYCLOAK_*`) |
+| **Keycloak → Postgres** | Keycloak’s own user/session/realm storage (not application MongoDB) |
+| **Kibana → Elasticsearch** | Ops/analytics UI for the ES cluster; **not** required by `be` or `my-app` at runtime |
+
+Stateful Railway plugins usually attach **volumes** (`mongodb-volume`, `redis-volume`, `postgres-volume`, `elasticsearch-volume`). Variable wiring for Docker-style deploys is summarized in [DEPLOY.md](DEPLOY.md) (Option D — Railway).
+
 ## Prerequisites
 
 - **Node.js** 20+ (workspace packages use Node 20 types; backend is ESM `type: module`)
