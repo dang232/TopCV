@@ -1,4 +1,4 @@
-# Optional deploy hook — replace steps with your host (Vercel, Fly, Docker, etc.).
+# Optional: wire your host (Vercel, Render, Fly, SSH to a VM). See DEPLOY.md in the repo root.
 name: Deploy
 
 on:
@@ -12,5 +12,5 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Placeholder
-        run: echo "Configure deploy steps for your environment."
+      - name: Hint
+        run: echo "See DEPLOY.md — free paths use Oracle Always Free + Docker, or Vercel + self-hosted API."
