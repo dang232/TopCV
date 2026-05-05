@@ -2,21 +2,17 @@
 export const API_V1_ENVELOPE_KEYS = new Set(['status', 'message', 'data']);
 
 /**
- * Whether `body` matches `{ status?, message?, data: object }` with no other own keys
- * and `data` a non-array object (the payload).
+ * Whether `body` matches `{ status?, message?, data }` with no other own keys.
  */
-export function isApiV1SuccessEnvelope(body: unknown): body is { data: object } & Record<string, unknown> {
+export function isApiV1SuccessEnvelope(body: unknown): body is { data: unknown } & Record<string, unknown> {
   if (body === null || body === undefined) return false;
   if (typeof body !== 'object' || Array.isArray(body)) return false;
   const o = body as Record<string, unknown>;
   const keys = Object.keys(o);
-  const data = o.data;
   return (
     keys.length > 0 &&
     keys.every((k) => API_V1_ENVELOPE_KEYS.has(k)) &&
-    data !== null &&
-    typeof data === 'object' &&
-    !Array.isArray(data)
+    'data' in o
   );
 }
 
