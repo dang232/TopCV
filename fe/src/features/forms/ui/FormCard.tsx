@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, type ChangeEvent } from 'react';
 import type React from 'react';
 import { FieldType, FormStatus, submissionAnswerKey, type FormDto, type FormField, type UpdateFormInput } from '@topcv/shared';
 import {
@@ -12,11 +12,12 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
+import { useEditFormDraft } from '../hooks/useEditFormDraft';
+import { fieldPlaceholder, todayIsoDate } from '../lib/formatters';
 import { fieldTypes } from '../model/fieldTypes';
-import { addFormField, moveFormField, removeFormField } from '../model/formFieldMutations';
+import { SortableFieldRow } from './SortableFieldRow';
 import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
 import { Input } from '@/src/components/ui/input';
@@ -31,32 +32,6 @@ interface FormCardProps {
   onSubmit(form: FormDto): void;
   onToggleStatus(form: FormDto): void;
   onUpdateForm(input: UpdateFormInput): void;
-}
-
-function todayIsoDate(): string {
-  const date = new Date();
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
-    .toISOString()
-    .slice(0, 10);
-}
-
-function fieldPlaceholder(field: FormField): string {
-  const label = field.label?.trim();
-  const labelHint = label ? ` (${label})` : '';
-
-  switch (field.type) {
-    case FieldType.Number:
-      return `Enter a number${labelHint}`;
-    case FieldType.Date:
-      return 'YYYY-MM-DD';
-    case FieldType.Color:
-      return 'Pick a color';
-    case FieldType.Select:
-      return 'Select…';
-    case FieldType.Text:
-    default:
-      return label ? `Enter ${label}` : 'Enter your answer';
-  }
 }
 
 function FieldInput({
@@ -137,10 +112,6 @@ function FieldInput({
   }
 }
 
-function createLocalFieldId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
 function numberFieldError(value: string, required: boolean): string | null {
   const trimmed = value.trim();
   if (!trimmed) return required ? 'This field is required.' : null;
@@ -149,58 +120,6 @@ function numberFieldError(value: string, required: boolean): string | null {
   if (!Number.isFinite(numeric)) return 'Please enter a valid number.';
   if (numeric < 0 || numeric > 100) return 'Value must be between 0 and 100.';
   return null;
-}
-
-function ensureFormFieldIds(fields: FormField[]): FormField[] {
-  let changed = false;
-  const next = fields.map((f) => {
-    if (f.id) return f;
-    changed = true;
-    return { ...f, id: `local-${createLocalFieldId()}` };
-  });
-  return changed ? next : fields;
-}
-
-function SortableFormFieldRow({
-  fieldId,
-  children,
-}: {
-  fieldId: string;
-  children: (params: {
-    isDragging: boolean;
-    dragHandleProps: React.HTMLAttributes<HTMLElement>;
-    dragAttributes: Record<string, unknown>;
-  }) => React.ReactNode;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: fieldId });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <li ref={setNodeRef} style={style} className={isDragging ? 'opacity-70' : undefined}>
-      {children({
-        isDragging,
-        dragHandleProps: { ...listeners },
-        dragAttributes: { ...attributes },
-      })}
-    </li>
-  );
-}
-
-function reorderFormFieldById(fields: FormField[], activeId: string, overId: string): FormField[] {
-  const fromIndex = fields.findIndex((f) => f.id === activeId);
-  const toIndex = fields.findIndex((f) => f.id === overId);
-  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return fields;
-
-  const copy = [...fields];
-  const [item] = copy.splice(fromIndex, 1);
-  if (!item) return fields;
-  copy.splice(toIndex, 0, item);
-
-  return copy.map((it, order) => ({ ...it, order }));
 }
 
 export function FormCard({
@@ -215,21 +134,37 @@ export function FormCard({
   onUpdateForm,
 }: FormCardProps) {
   const stopRowDragStart = (event: React.PointerEvent<HTMLElement>) => event.stopPropagation();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(form.title);
-  const [editDescription, setEditDescription] = useState(form.description ?? '');
-  const [editOrder, setEditOrder] = useState(String(form.order));
-  const [editStatus, setEditStatus] = useState<FormDto['status']>(form.status);
-  const [editFields, setEditFields] = useState<FormField[]>(() =>
-    ensureFormFieldIds([...form.fields].sort((a, b) => a.order - b.order)),
-  );
-
-  const [newFieldLabel, setNewFieldLabel] = useState('');
-  const [newFieldType, setNewFieldType] = useState<FieldType>(FieldType.Text);
-  const [newFieldRequired, setNewFieldRequired] = useState(true);
-  const [newFieldOptions, setNewFieldOptions] = useState('');
-
-  const canSave = useMemo(() => editTitle.trim().length > 0 && editFields.length > 0, [editFields.length, editTitle]);
+  const {
+    isEditing,
+    toggle: toggleEditing,
+    cancel: resetEditState,
+    editTitle,
+    setEditTitle,
+    editDescription,
+    setEditDescription,
+    editOrder,
+    setEditOrder,
+    editStatus,
+    setEditStatus,
+    editFields,
+    updateField,
+    changeFieldType,
+    setSelectOptions,
+    removeField,
+    moveField,
+    reorderFieldsById,
+    newFieldLabel,
+    setNewFieldLabel,
+    newFieldType,
+    setNewFieldType,
+    newFieldRequired,
+    setNewFieldRequired,
+    newFieldOptions,
+    setNewFieldOptions,
+    commitNewField,
+    canSave,
+    buildUpdate,
+  } = useEditFormDraft(form);
   const answerErrors = useMemo(() => {
     if (mode !== 'staff') return {};
     const entries = form.fields
@@ -248,43 +183,20 @@ export function FormCard({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  function resetEditState() {
-    setIsEditing(false);
-    setEditTitle(form.title);
-    setEditDescription(form.description ?? '');
-    setEditOrder(String(form.order));
-    setEditStatus(form.status);
-    setEditFields(ensureFormFieldIds([...form.fields].sort((a, b) => a.order - b.order)));
-    setNewFieldLabel('');
-    setNewFieldType(FieldType.Text);
-    setNewFieldRequired(true);
-    setNewFieldOptions('');
-  }
-
   function submitUpdate(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!canSave) return;
 
-    const orderNumber = Number(editOrder);
-    const update: UpdateFormInput = {
-      id: form.id,
-      title: editTitle.trim(),
-      description: editDescription,
-      status: editStatus,
-      order: Number.isFinite(orderNumber) ? orderNumber : form.order,
-      fields: editFields.map((field, index) => ({ ...field, order: index })),
-    };
-
-    onUpdateForm(update);
-    setIsEditing(false);
+    onUpdateForm(buildUpdate(form.id, form.order));
+    toggleEditing();
   }
 
   function handleEditFieldsDragEnd(event: DragEndEvent) {
     const activeId = String(event.active.id);
     const overId = event.over?.id ? String(event.over.id) : null;
     if (!overId || activeId === overId) return;
-    setEditFields((current) => reorderFormFieldById(current, activeId, overId));
+    reorderFieldsById(activeId, overId);
   }
 
   return (
@@ -299,7 +211,7 @@ export function FormCard({
         </div>
         {mode === 'admin' ? (
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setIsEditing((v) => !v)}>
+            <Button variant="outline" size="sm" type="button" onClick={toggleEditing}>
               {isEditing ? 'Close' : 'Edit'}
             </Button>
             <Button variant="outline" size="sm" type="button" onClick={() => onToggleStatus(form)}>
@@ -361,7 +273,7 @@ export function FormCard({
               <SortableContext items={editFields.map((f) => f.id as string)} strategy={verticalListSortingStrategy}>
                 <ol className="mt-3 space-y-2">
                   {editFields.map((field, index) => (
-                    <SortableFormFieldRow key={field.id as string} fieldId={field.id as string}>
+                    <SortableFieldRow key={field.id as string} fieldId={field.id as string}>
                       {({ dragHandleProps, dragAttributes }) => (
                         <div
                           className="cursor-grab rounded-lg border border-border bg-card p-3 shadow-sm active:cursor-grabbing"
@@ -380,11 +292,7 @@ export function FormCard({
                                 className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 value={field.label}
                                 onPointerDownCapture={stopRowDragStart}
-                                onChange={(e) =>
-                                  setEditFields((current) =>
-                                    current.map((it, i) => (i === index ? { ...it, label: e.target.value } : it)),
-                                  )
-                                }
+                                onChange={(e) => updateField(index, { label: e.target.value })}
                               />
                             </label>
                             <label className="block text-sm font-medium">
@@ -393,18 +301,7 @@ export function FormCard({
                                 className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 value={field.type}
                                 onPointerDownCapture={stopRowDragStart}
-                                onChange={(e) => {
-                                  const nextType = e.target.value as FieldType;
-                                  setEditFields((current) =>
-                                    current.map((it, i) => {
-                                      if (i !== index) return it;
-                                      if (nextType === FieldType.Select) {
-                                        return { ...it, type: nextType, options: it.options?.length ? it.options : ['Option 1'] };
-                                      }
-                                      return { ...it, type: nextType, options: undefined };
-                                    }),
-                                  );
-                                }}
+                                onChange={(e) => changeFieldType(index, e.target.value as FieldType)}
                               >
                                 {fieldTypes.map((type) => (
                                   <option key={type} value={type}>
@@ -418,11 +315,7 @@ export function FormCard({
                                 type="checkbox"
                                 checked={field.required}
                                 onPointerDownCapture={stopRowDragStart}
-                                onChange={(e) =>
-                                  setEditFields((current) =>
-                                    current.map((it, i) => (i === index ? { ...it, required: e.target.checked } : it)),
-                                  )
-                                }
+                                onChange={(e) => updateField(index, { required: e.target.checked })}
                               />
                               Required
                             </label>
@@ -436,18 +329,12 @@ export function FormCard({
                                 value={(field.options ?? []).join(', ')}
                                 onPointerDownCapture={stopRowDragStart}
                                 onChange={(e) =>
-                                  setEditFields((current) =>
-                                    current.map((it, i) =>
-                                      i === index && it.type === FieldType.Select
-                                        ? {
-                                            ...it,
-                                            options: e.target.value
-                                              .split(',')
-                                              .map((s) => s.trim())
-                                              .filter(Boolean),
-                                          }
-                                        : it,
-                                    ),
+                                  setSelectOptions(
+                                    index,
+                                    e.target.value
+                                      .split(',')
+                                      .map((s) => s.trim())
+                                      .filter(Boolean),
                                   )
                                 }
                               />
@@ -459,7 +346,7 @@ export function FormCard({
                               variant="outline"
                               size="sm"
                               type="button"
-                              onClick={() => setEditFields((current) => moveFormField(current, index, -1))}
+                              onClick={() => moveField(index, -1)}
                               disabled={index === 0}
                               onPointerDownCapture={stopRowDragStart}
                             >
@@ -469,7 +356,7 @@ export function FormCard({
                               variant="outline"
                               size="sm"
                               type="button"
-                              onClick={() => setEditFields((current) => moveFormField(current, index, 1))}
+                              onClick={() => moveField(index, 1)}
                               disabled={index === editFields.length - 1}
                               onPointerDownCapture={stopRowDragStart}
                             >
@@ -479,7 +366,7 @@ export function FormCard({
                               variant="outline"
                               size="sm"
                               type="button"
-                              onClick={() => setEditFields((current) => removeFormField(current, index))}
+                              onClick={() => removeField(index)}
                               onPointerDownCapture={stopRowDragStart}
                             >
                               Remove
@@ -487,7 +374,7 @@ export function FormCard({
                           </div>
                         </div>
                       )}
-                    </SortableFormFieldRow>
+                    </SortableFieldRow>
                   ))}
                 </ol>
               </SortableContext>
@@ -539,20 +426,7 @@ export function FormCard({
                 className="mt-3"
                 variant="outline"
                 type="button"
-                onClick={() => {
-                  setEditFields((current) =>
-                    addFormField(current, {
-                      label: newFieldLabel,
-                      type: newFieldType,
-                      required: newFieldRequired,
-                      selectOptionsRaw: newFieldOptions,
-                    }),
-                  );
-                  setNewFieldLabel('');
-                  setNewFieldType(FieldType.Text);
-                  setNewFieldRequired(true);
-                  setNewFieldOptions('');
-                }}
+                onClick={commitNewField}
                 disabled={!newFieldLabel.trim()}
               >
                 Add field

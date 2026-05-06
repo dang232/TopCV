@@ -3,37 +3,12 @@
 import type { FormDto, SubmissionDto, UpdateFormInput } from '@topcv/shared';
 import { useMemo, useState } from 'react';
 
+import { formatDateTime, isHexColor, normalizeAnswerValue, truncateId } from '../lib/formatters';
 import { FormCard } from './FormCard';
 import { FormsToolbar } from './FormsToolbar';
 import { Button } from '@/src/components/ui/button';
 
 export type FormsMode = 'admin' | 'staff';
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
-}
-
-function truncateId(value: string, keep = 8) {
-  if (value.length <= keep * 2 + 1) return value;
-  return `${value.slice(0, keep)}…${value.slice(-keep)}`;
-}
-
-function normalizeAnswerValue(value: unknown) {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-}
-
-function isHexColor(value: string) {
-  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value.trim());
-}
 
 interface FormsListPanelProps {
   mode: FormsMode;

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/mongodb';
+import type { FormStatus } from '@topcv/shared/forms';
 
 import type { FormRepository } from '../../application/ports/form.repository';
 import type { DynamicForm } from '../../domain/form.aggregate';
@@ -23,6 +24,12 @@ export class MikroFormRepository implements FormRepository {
 
   async findAll(): Promise<DynamicForm[]> {
     const entities = await this.em.find(FormEntity, {}, { orderBy: { order: 'asc' } });
+
+    return entities.map((entity) => FormMapper.toDomain(entity));
+  }
+
+  async findByStatus(status: FormStatus): Promise<DynamicForm[]> {
+    const entities = await this.em.find(FormEntity, { status }, { orderBy: { order: 'asc' } });
 
     return entities.map((entity) => FormMapper.toDomain(entity));
   }

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FieldType, FormStatus } from '@topcv/shared/forms';
 
+import { FormCacheInvalidator } from '../cache-keys/form-cache.invalidator';
 import type { FormCache } from '../ports/form.cache';
 import type { FormRepository } from '../ports/form.repository';
 import type { FormSearchIndex } from '../ports/form.search-index';
@@ -11,6 +12,7 @@ describe('CreateFormUseCase', () => {
     const repository: FormRepository = {
       save: vi.fn(async (form) => form),
       findAll: vi.fn(),
+      findByStatus: vi.fn(async () => []),
       countAll: vi.fn(async () => 0),
       findPage: vi.fn(async () => []),
       findById: vi.fn(),
@@ -29,7 +31,7 @@ describe('CreateFormUseCase', () => {
     };
     const useCase = new CreateFormUseCase(
       repository,
-      cache,
+      new FormCacheInvalidator(cache),
       searchIndex,
       () => 'form-1',
       () => new Date('2099-01-01T00:00:00.000Z'),

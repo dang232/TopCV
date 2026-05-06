@@ -21,9 +21,8 @@ export class GetActiveFormsUseCase {
       return cached;
     }
 
-    const activeForms = (await this.repository.findAll())
+    const activeForms = (await this.repository.findByStatus(FormStatus.Active))
       .map((form) => FormDtoMapper.toDto(form))
-      .filter((form) => form.status === FormStatus.Active)
       .sort((left, right) => left.order - right.order);
 
     await this.cache.set(key, activeForms, 60);

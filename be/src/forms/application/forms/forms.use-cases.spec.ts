@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FieldType } from '../../domain/field-type';
 import { DynamicForm } from '../../domain/form.aggregate';
 import { FormStatus } from '../../domain/form-status';
+import { FormCacheInvalidator } from '../cache-keys/form-cache.invalidator';
 import { FormDtoMapper } from '../mapping/form-dto.mapper';
 import type { FormCache } from '../ports/form.cache';
 import type { FormRepository } from '../ports/form.repository';
@@ -33,6 +34,9 @@ function makeDeps(forms: DynamicForm[] = []) {
   const repository: FormRepository = {
     save: vi.fn(async (form) => form),
     findAll: vi.fn(async () => forms),
+    findByStatus: vi.fn(async (status) =>
+      forms.filter((form) => form.toSnapshot().status === status),
+    ),
     countAll: vi.fn(async () => forms.length),
     findPage: vi.fn(async ({ skip, take }: { skip: number; take: number }) => forms.slice(skip, skip + take)),
     findById: vi.fn(async (id) => forms.find((form) => form.toSnapshot().id === id) ?? null),
@@ -96,7 +100,12 @@ describe('form use cases', () => {
   it('updates a form, invalidates read caches, and reindexes search', async () => {
     const form = makeForm('form-1');
     const { repository, cache, searchIndex } = makeDeps([form]);
-    const useCase = new UpdateFormUseCase(repository, cache, searchIndex, () => new Date('2099-01-02T00:00:00.000Z'));
+    const useCase = new UpdateFormUseCase(
+      repository,
+      new FormCacheInvalidator(cache),
+      searchIndex,
+      () => new Date('2099-01-02T00:00:00.000Z'),
+    );
 
     const updated = await useCase.execute({ id: 'form-1', title: 'Updated' });
 
@@ -108,7 +117,7 @@ describe('form use cases', () => {
 
   it('deletes a form and removes cache/search entries', async () => {
     const { repository, cache, searchIndex } = makeDeps();
-    const useCase = new DeleteFormUseCase(repository, cache, searchIndex);
+    const useCase = new DeleteFormUseCase(repository, new FormCacheInvalidator(cache), searchIndex);
 
     await useCase.execute({ id: 'form-1' });
 

@@ -2,9 +2,8 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import { CreateFormInputSchema, type CreateFormInput, type FormDto } from '@topcv/shared/forms';
 
 import { DynamicForm } from '../../domain/form.aggregate';
-import { FormCacheKeys } from '../cache-keys/form-cache-keys';
+import { FormCacheInvalidator } from '../cache-keys/form-cache.invalidator';
 import { FormDtoMapper } from '../mapping/form-dto.mapper';
-import { FORM_CACHE, type FormCache } from '../ports/form.cache';
 import { FORM_REPOSITORY, type FormRepository } from '../ports/form.repository';
 import { FORM_SEARCH_INDEX, type FormSearchIndex } from '../ports/form.search-index';
 
@@ -18,7 +17,7 @@ export class CreateFormUseCase {
 
   constructor(
     @Inject(FORM_REPOSITORY) private readonly repository: FormRepository,
-    @Inject(FORM_CACHE) private readonly cache: FormCache,
+    private readonly cacheInvalidator: FormCacheInvalidator,
     @Inject(FORM_SEARCH_INDEX) private readonly searchIndex: FormSearchIndex,
     @Optional() @Inject('FORM_ID_FACTORY') idFactory?: IdFactory,
     @Optional() @Inject('FORM_CLOCK') clock?: Clock,
@@ -37,7 +36,7 @@ export class CreateFormUseCase {
     const form = DynamicForm.create(formId, { ...parsed, fields: FormDtoMapper.toDomainFields(fields) }, this.clock());
     const saved = await this.repository.save(form);
 
-    await this.cache.delete(FormCacheKeys.list(), FormCacheKeys.active());
+    await this.cacheInvalidator.invalidateLists();
     await this.searchIndex.index(saved.toSnapshot());
 
     return FormDtoMapper.toDto(saved);

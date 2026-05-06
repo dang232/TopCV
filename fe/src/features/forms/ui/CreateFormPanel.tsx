@@ -11,12 +11,12 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
 import type { CreateFormDraft } from '../model/draftTypes';
 import { fieldTypes } from '../model/fieldTypes';
 import { addDraftField, moveDraftField, removeDraftField, reorderDraftField } from '../model/draftMutations';
+import { SortableFieldRow } from './SortableFieldRow';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { Badge } from '@/src/components/ui/badge';
@@ -28,35 +28,6 @@ interface CreateFormPanelProps {
   message: string;
   onDraftChange(draft: CreateFormDraft): void;
   onSubmit(event: React.SyntheticEvent<HTMLFormElement>): void;
-}
-
-function SortableDraftFieldRow({
-  fieldId,
-  children,
-}: {
-  fieldId: string;
-  children: (params: {
-    isDragging: boolean;
-    dragHandleProps: React.HTMLAttributes<HTMLElement>;
-    dragAttributes: Record<string, unknown>;
-  }) => React.ReactNode;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: fieldId });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <li ref={setNodeRef} style={style} className={isDragging ? 'opacity-70' : undefined}>
-      {children({
-        isDragging,
-        dragHandleProps: { ...listeners },
-        dragAttributes: { ...attributes },
-      })}
-    </li>
-  );
 }
 
 export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit }: CreateFormPanelProps) {
@@ -126,7 +97,7 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
               <SortableContext items={draft.fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
                 <ol className="mt-3 space-y-2">
                   {draft.fields.map((field, index) => (
-                    <SortableDraftFieldRow key={field.id} fieldId={field.id}>
+                    <SortableFieldRow key={field.id} fieldId={field.id}>
                       {({ dragHandleProps, dragAttributes }) => (
                         <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-card px-3 py-3 text-sm shadow-sm">
                           <div className="flex min-w-0 items-start gap-3">
@@ -183,7 +154,7 @@ export function CreateFormPanel({ draft, error, message, onDraftChange, onSubmit
                           </div>
                         </div>
                       )}
-                    </SortableDraftFieldRow>
+                    </SortableFieldRow>
                   ))}
                 </ol>
               </SortableContext>
