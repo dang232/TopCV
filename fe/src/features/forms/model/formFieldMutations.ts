@@ -1,21 +1,12 @@
 import { FieldType, type FormField } from '@topcv/shared';
 
 import { buildDraftField } from './draftField';
+import { reorderFields } from './reorderFields';
 
 export function moveFormField(fields: FormField[], index: number, delta: number): FormField[] {
-  const nextIndex = index + delta;
-  if (nextIndex < 0 || nextIndex >= fields.length) {
-    return fields;
-  }
-
-  const copy = [...fields];
-  const [field] = copy.splice(index, 1);
-  if (!field) {
-    return fields;
-  }
-  copy.splice(nextIndex, 0, field);
-
-  return copy.map((item, order) => ({ ...item, order }));
+  const next = reorderFields(fields, index, index + delta);
+  if (next === fields) return fields;
+  return (next as FormField[]).map((item, order) => ({ ...item, order }));
 }
 
 export function removeFormField(fields: FormField[], index: number): FormField[] {

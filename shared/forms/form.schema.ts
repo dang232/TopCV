@@ -45,12 +45,19 @@ export const FormFieldSchema = z.discriminatedUnion('type', [
   SelectFieldSchema,
 ]);
 
-export const CreateFormInputSchema = z.object({
+const FormBaseShape = {
   title: z.string().trim().min(1).max(200),
-  description: z.string().trim().max(500).default(''),
+  description: z.string().trim().max(500),
   order: z.number().int().min(0),
-  status: FormStatusSchema.default(FormStatus.Draft),
+  status: FormStatusSchema,
   fields: z.array(FormFieldSchema).min(1),
+} as const;
+
+const FormBaseSchema = z.object(FormBaseShape);
+
+export const CreateFormInputSchema = FormBaseSchema.extend({
+  description: FormBaseShape.description.default(''),
+  status: FormBaseShape.status.default(FormStatus.Draft),
 });
 
 export const FormDtoSchema = CreateFormInputSchema.extend({
@@ -75,15 +82,8 @@ export const PaginatedFormListSchema = z.object({
   pageSize: z.number().int().min(1),
 });
 
-export const UpdateFormInputSchema = z
-  .object({
-    id: z.string().min(1),
-    title: z.string().trim().min(1).max(200).optional(),
-    description: z.string().trim().max(500).optional(),
-    order: z.number().int().min(0).optional(),
-    status: FormStatusSchema.optional(),
-    fields: z.array(FormFieldSchema).min(1).optional(),
-  })
+export const UpdateFormInputSchema = FormBaseSchema.partial()
+  .extend({ id: z.string().min(1) })
   .refine(
     ({ title, description, order, status, fields }) =>
       title !== undefined ||
@@ -105,6 +105,12 @@ export const SearchFormsInputSchema = z.object({
 
 export const FormAnswerValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
+export const SubmittedAnswerSchema = z.object({
+  fieldId: z.string().min(1),
+  fieldLabel: z.string().min(1),
+  value: FormAnswerValueSchema,
+});
+
 export const SubmitFormInputSchema = z.object({
   formId: z.string().min(1),
   answers: z.record(z.string().min(1), FormAnswerValueSchema),
@@ -125,10 +131,26 @@ export type PaginationInput = z.infer<typeof PaginationInputSchema>;
 export type PaginatedFormList = z.infer<typeof PaginatedFormListSchema>;
 export type SearchFormsInput = z.infer<typeof SearchFormsInputSchema>;
 export type FormAnswerValue = z.infer<typeof FormAnswerValueSchema>;
+export type SubmittedAnswer = z.infer<typeof SubmittedAnswerSchema>;
 export type SubmitFormInput = z.infer<typeof SubmitFormInputSchema>;
 export type SubmissionDto = z.infer<typeof SubmissionDtoSchema>;
 
 /** Stable answer key on the wire; matches CSR inputs (`field.id ?? field.label`). */
 export function submissionAnswerKey(field: FormField): string {
   return field.id ?? field.label;
+}
+
+/**
+ * Project a record-shaped submission onto the form's field list, producing a typed array
+ * of {fieldId, fieldLabel, value}. Fields without an answer are omitted.
+ */
+export function submittedAnswersFor(
+  fields: readonly FormField[],
+  answers: Record<string, FormAnswerValue>,
+): SubmittedAnswer[] {
+  return fields.flatMap((field) => {
+    const key = submissionAnswerKey(field);
+    if (!(key in answers)) return [];
+    return [{ fieldId: key, fieldLabel: field.label, value: answers[key] ?? null }];
+  });
 }

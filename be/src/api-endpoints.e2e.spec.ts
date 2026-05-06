@@ -86,6 +86,10 @@ class InMemoryFormRepository implements FormRepository {
     return [...this.forms.values()].sort((left, right) => left.toSnapshot().order - right.toSnapshot().order);
   }
 
+  async findByStatus(status: DomainFormStatus): Promise<DynamicForm[]> {
+    return (await this.findAll()).filter((form) => form.toSnapshot().status === status);
+  }
+
   async countAll(): Promise<number> {
     return this.forms.size;
   }

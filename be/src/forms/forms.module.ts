@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { FormCacheInvalidator } from './application/cache-keys/form-cache.invalidator';
 import { CreateFormUseCase } from './application/forms/create-form.use-case';
 import { DeleteFormUseCase } from './application/forms/delete-form.use-case';
 import { GetActiveFormsUseCase } from './application/forms/get-active-forms.use-case';
@@ -25,6 +26,7 @@ const orpcPublicControllers = (process.env.ORPC_PUBLIC_ENABLED ?? '').toLowerCas
   imports: [FormsPersistenceModule, FormsCacheModule, FormsSearchModule, AuthModule],
   controllers: [FormsV1RestController, SubmissionsV1RestController, ...orpcPublicControllers],
   providers: [
+    FormCacheInvalidator,
     CreateFormUseCase,
     ListFormsUseCase,
     ListFormsPageUseCase,

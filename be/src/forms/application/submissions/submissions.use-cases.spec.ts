@@ -24,6 +24,7 @@ describe('submission use cases', () => {
     const forms: FormRepository = {
       save: vi.fn(),
       findAll: vi.fn(),
+      findByStatus: vi.fn(async () => []),
       countAll: vi.fn(async () => 1),
       findPage: vi.fn(async () => [form]),
       findById: vi.fn(async () => form),
@@ -53,6 +54,7 @@ describe('submission use cases', () => {
     const forms: FormRepository = {
       save: vi.fn(),
       findAll: vi.fn(),
+      findByStatus: vi.fn(async () => []),
       countAll: vi.fn(async () => 1),
       findPage: vi.fn(async () => [form]),
       findById: vi.fn(async () => form),
@@ -82,6 +84,7 @@ describe('submission use cases', () => {
     const forms: FormRepository = {
       save: vi.fn(),
       findAll: vi.fn(),
+      findByStatus: vi.fn(async () => []),
       countAll: vi.fn(async () => 1),
       findPage: vi.fn(async () => [form]),
       findById: vi.fn(async () => form),
