@@ -9,7 +9,7 @@ import { FORM_SEARCH_INDEX, type FormSearchIndex } from '../ports/form.search-in
 export class DeleteFormUseCase {
   constructor(
     @Inject(FORM_REPOSITORY) private readonly repository: FormRepository,
-    private readonly cacheInvalidator: FormCacheInvalidator,
+    @Inject(FormCacheInvalidator) private readonly cacheInvalidator: FormCacheInvalidator,
     @Inject(FORM_SEARCH_INDEX) private readonly searchIndex: FormSearchIndex,
   ) {}
 

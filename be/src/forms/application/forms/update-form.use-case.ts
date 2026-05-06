@@ -15,7 +15,7 @@ export class UpdateFormUseCase {
 
   constructor(
     @Inject(FORM_REPOSITORY) private readonly repository: FormRepository,
-    private readonly cacheInvalidator: FormCacheInvalidator,
+    @Inject(FormCacheInvalidator) private readonly cacheInvalidator: FormCacheInvalidator,
     @Inject(FORM_SEARCH_INDEX) private readonly searchIndex: FormSearchIndex,
     @Optional() @Inject('FORM_CLOCK') clock?: Clock,
   ) {
