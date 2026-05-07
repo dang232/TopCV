@@ -92,3 +92,31 @@ export function buildUserFacingHttpErrorMessage(status: number, body: unknown, s
 
   return statusFallbackMessage(status);
 }
+
+function isApiHttpErrorLike(err: unknown): err is { status: number; body: unknown; message?: string } {
+  return (
+    err instanceof Error &&
+    err.name === 'ApiHttpError' &&
+    typeof (err as { status?: unknown }).status === 'number'
+  );
+}
+
+/**
+ * Single entry point for turning API/network failures into safe UI copy.
+ * Prefer this over re-parsing bodies in views.
+ */
+export function toUserFacingMessage(err: unknown): string {
+  if (isApiHttpErrorLike(err)) {
+    return buildUserFacingHttpErrorMessage(err.status, err.body, err.message);
+  }
+  if (err instanceof TypeError && /fetch|network/i.test(String(err.message))) {
+    return 'Unable to reach the server. Check your connection and that the API is running.';
+  }
+  if (err instanceof Error && err.message.trim()) {
+    return err.message;
+  }
+  if (typeof err === 'string' && err.trim()) {
+    return err;
+  }
+  return 'Something went wrong. Please try again.';
+}
