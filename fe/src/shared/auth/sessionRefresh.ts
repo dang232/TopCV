@@ -1,5 +1,6 @@
 'use client';
 
+import { unwrapApiV1SuccessJson } from '@/src/shared/api/http/apiSuccessEnvelope';
 import { API_V1 } from '@/src/shared/api/http/constants';
 import { getPublicEnv } from '@/src/shared/config/publicEnv';
 
@@ -36,7 +37,7 @@ export async function refreshAccessTokenSingleFlight(): Promise<boolean> {
         return false;
       }
 
-      const json = (await res.json()) as {
+      const json = unwrapApiV1SuccessJson(await res.json()) as {
         accessToken: string;
         refreshToken?: string;
         idToken?: string;
