@@ -250,7 +250,7 @@ export function createApiClient(options: CreateApiClientOptions = {}) {
     };
     pushApiLog(entry);
     logApiDev(entry);
-    return unwrapApiV1SuccessJson<T>(json);
+    return json;
   }
 
   return { apiFetch, apiFetchJson, origin };

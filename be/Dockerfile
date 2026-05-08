@@ -50,4 +50,5 @@ WORKDIR /app/be
 USER node
 EXPOSE 3000
 
-CMD ["node", "dist/src/main.js"]
+# @topcv/shared ships TypeScript; tsx runs the API with ESM resolution (extensionless imports).
+CMD ["pnpm", "exec", "tsx", "dist/src/main.js"]

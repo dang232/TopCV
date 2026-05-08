@@ -21,6 +21,7 @@ export class ApiExceptionFilter extends BaseExceptionFilter {
     const req = ctx.getRequest<{ originalUrl?: string; url?: string }>();
 
     if (res.headersSent) {
+      super.catch(exception, host);
       return;
     }
 
