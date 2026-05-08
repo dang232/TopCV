@@ -1,6 +1,10 @@
 import { API_V1 } from './constants';
 import { unwrapApiV1SuccessJson } from './apiSuccessEnvelope';
-import { buildUserFacingHttpErrorMessage, extractRestErrorFromBody } from './restApiError';
+import {
+  buildUserFacingHttpErrorMessage,
+  extractRestErrorFromBody,
+  toUserFacingMessage as toUserFacingMessageFromRestApiError,
+} from './restApiError';
 import { clearSessionOnUnauthorizedApiResponse, shouldAttachBearerForApiRequest } from './unauthorizedSession';
 import { ensureSessionAccessTokenFresh, refreshAccessTokenSingleFlight, shouldAttempt401Refresh } from '@/src/shared/auth/sessionRefresh';
 import { getAccessTokenFromStorage } from '@/src/shared/auth';
@@ -24,15 +28,7 @@ export class ApiHttpError extends Error {
   }
 }
 
-export function toUserFacingMessage(err: unknown): string {
-  if (err instanceof ApiHttpError) {
-    return err.userFacingMessage();
-  }
-  if (err instanceof TypeError && typeof err.message === 'string' && err.message.toLowerCase().includes('fetch')) {
-    return 'Unable to reach the server. Check your connection and that the API is running.';
-  }
-  return 'Something went wrong. Please try again.';
-}
+export const toUserFacingMessage = toUserFacingMessageFromRestApiError;
 
 export type CreateApiClientOptions = {
   fetchImpl?: typeof fetch;
@@ -241,7 +237,7 @@ export function createApiClient(options: CreateApiClientOptions = {}) {
       logApiDev(entry);
       return undefined as T;
     }
-    const json = (await res.json()) as T;
+    const json = unwrapApiV1SuccessJson(await res.json()) as T;
     const durationMs = nowMs() - start;
     const entry: ApiLogEntry = {
       ts: Date.now(),
@@ -254,7 +250,7 @@ export function createApiClient(options: CreateApiClientOptions = {}) {
     };
     pushApiLog(entry);
     logApiDev(entry);
-    return unwrapApiV1SuccessJson<T>(json);
+    return json;
   }
 
   return { apiFetch, apiFetchJson, origin };

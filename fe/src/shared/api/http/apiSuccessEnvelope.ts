@@ -2,23 +2,19 @@
 export const API_V1_ENVELOPE_KEYS = new Set(['status', 'message', 'data']);
 
 /**
- * Whether `body` matches `{ status?, message?, data }` with no other own keys.
+ * Whether `body` matches `{ status: 'success', message?, data }` with no other own keys.
  */
-export function isApiV1SuccessEnvelope(body: unknown): body is { data: unknown } & Record<string, unknown> {
+export function isApiV1SuccessEnvelope(body: unknown): body is { status: 'success'; data: unknown; message?: unknown } {
   if (body === null || body === undefined) return false;
   if (typeof body !== 'object' || Array.isArray(body)) return false;
   const o = body as Record<string, unknown>;
   const keys = Object.keys(o);
-  return (
-    keys.length > 0 &&
-    keys.every((k) => API_V1_ENVELOPE_KEYS.has(k)) &&
-    'data' in o
-  );
+  return keys.every((k) => API_V1_ENVELOPE_KEYS.has(k)) && o.status === 'success' && 'data' in o;
 }
 
 /**
- * Unwraps `{ status, message?, data }` API v1 success bodies to the inner `data` payload.
- * Plain objects that are not envelopes (e.g. domain models with their own `data` plus other fields) are returned unchanged.
+ * Unwraps `{ status: 'success', message?, data }` API v1 success bodies to the inner `data` payload.
+ * Plain objects that are not exact success envelopes (e.g. domain models with their own `data`) are returned unchanged.
  */
 export function unwrapApiV1SuccessJson<T>(body: unknown): T {
   if (body === null || body === undefined) return body as T;

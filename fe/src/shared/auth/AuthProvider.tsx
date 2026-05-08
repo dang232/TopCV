@@ -7,7 +7,8 @@ import type { TopcvRealmRole } from '@topcv/shared/auth';
 import { buildAuthSessionFromRestTokens } from './buildAuthSessionFromRestTokens';
 import { clearStoredSession, readStoredSession, subscribeToSession, writeStoredSession, type AuthSession } from './authStore';
 import { API_V1 } from '@/src/shared/api/http/constants';
-import { ApiHttpError, apiFetchJson } from '@/src/shared/api/http/apiClient';
+import { apiFetchJson } from '@/src/shared/api/http/apiClient';
+import { toUserFacingMessage } from '@/src/shared/api/http/restApiError';
 import { getPublicEnv } from '@/src/shared/config/publicEnv';
 import { logErrorDev } from '@/src/shared/logging/logger';
 import { normalizeRoles } from './roles';
@@ -50,14 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       } catch (err) {
         logErrorDev('[auth.login] request failed', undefined, err);
-        if (err instanceof ApiHttpError) {
-          if (err.message) throw new Error(err.message);
-          throw new Error(`Sign-in failed (${err.status}).`);
-        }
-        if (err instanceof TypeError && /fetch|network/i.test(String(err.message))) {
-          throw new Error('Unable to reach the server. Check your connection and that the API is running.');
-        }
-        throw new Error('Sign-in failed.');
+        throw new Error(toUserFacingMessage(err));
       }
 
       writeStoredSession(buildAuthSessionFromRestTokens(res));
@@ -81,13 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         } catch (err) {
           logErrorDev('[auth.register] request failed', undefined, err);
-          if (err instanceof ApiHttpError && err.message) {
-            throw new Error(err.message);
-          }
-          if (err instanceof TypeError && /fetch|network/i.test(String(err.message))) {
-            throw new Error('Unable to reach the server. Check your connection and that the API is running.');
-          }
-          throw new Error('Registration failed.');
+          throw new Error(toUserFacingMessage(err));
         }
         await doLogin({ usernameOrEmail: input.email, password: input.password, returnTo: input.returnTo });
       },
