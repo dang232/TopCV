@@ -1,6 +1,6 @@
 /**
- * SPA session (localStorage). Access + refresh tokens are readable to JS (XSS risk); short access TTL
- * limits exposure. No BFF — refresh uses `POST /auth/refresh` with single-flight dedupe in `sessionRefresh`.
+ * SPA session (sessionStorage). Access + refresh tokens are readable to JS (XSS risk); tab-scoped
+ * persistence and short access TTL limit exposure. No BFF — refresh uses `POST /auth/refresh` with single-flight dedupe.
  */
 export type AuthSession = {
   accessToken: string;

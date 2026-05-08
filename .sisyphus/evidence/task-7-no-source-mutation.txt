@@ -1,0 +1,52 @@
+Task 7 Source Mutation Evidence
+Timestamp: 2026-05-07T22:27:52+07:00
+
+Purpose:
+- Preserve F3 Manual QA fix by recording fresh full untracked git status output.
+- Command uses --untracked-files=all so untracked evidence files and run-continuation JSON files are listed individually, not collapsed as directories.
+- Refresh also covers Task 7 environment verification update in .sisyphus/evidence/task-7-verification.txt.
+
+Command:
+- git status --short --untracked-files=all
+
+Fresh output:
+ M .sisyphus/boulder.json
+ M be/Dockerfile
+ M be/package.json
+ M be/src/infra/external-clients.module.ts
+ M be/tsconfig.build.json
+ M fe/src/shared/auth/session/storage.ts
+ M fe/src/shared/auth/session/types.ts
+?? .sisyphus/evidence/task-7-no-source-mutation.txt
+?? .sisyphus/evidence/task-7-verification.txt
+?? .sisyphus/run-continuation/ses_1fd64ac2cffeiXnQUZXk4Yi10V.json
+?? .sisyphus/run-continuation/ses_1fd66129fffeZXEPYaahDqSIOL.json
+
+Classification:
+- Inherited dirty source files from task context:
+  - be/Dockerfile
+  - be/package.json
+  - be/src/infra/external-clients.module.ts
+  - be/tsconfig.build.json
+  - fe/src/shared/auth/session/storage.ts
+  - fe/src/shared/auth/session/types.ts
+- Allowed audit evidence artifacts under .sisyphus/evidence/:
+  - .sisyphus/evidence/task-7-no-source-mutation.txt
+  - .sisyphus/evidence/task-7-verification.txt
+- Non-source Sisyphus orchestration state:
+  - .sisyphus/boulder.json
+  - .sisyphus/run-continuation/ses_1fd64ac2cffeiXnQUZXk4Yi10V.json
+  - .sisyphus/run-continuation/ses_1fd66129fffeZXEPYaahDqSIOL.json
+- Plan file .sisyphus/plans/ddd-hexagonal-oop-drift-audit.md:
+  - Not visible in fresh git status output.
+  - Not modified by this task.
+
+Source mutation conclusion:
+- No production source files were intentionally modified by this evidence-refresh task.
+- Current dirty source entries match inherited source file list supplied in task context.
+- Current untracked evidence files are expected audit artifacts.
+- Current .sisyphus/boulder.json and .sisyphus/run-continuation/*.json entries are non-source Sisyphus orchestration state.
+
+Project check status cross-reference:
+- .sisyphus/evidence/task-7-verification.txt preserves original direct `pnpm check` missing-PATH failure.
+- .sisyphus/evidence/task-7-verification.txt now also records Corepack EPERM failure and successful `npx pnpm@10.33.2 check` orchestrator run.

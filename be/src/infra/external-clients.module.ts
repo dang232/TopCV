@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Client as ElasticsearchClient } from '@elastic/elasticsearch';
 import { Redis } from 'ioredis';
 
@@ -10,17 +11,19 @@ export const ELASTICSEARCH_CLIENT = Symbol('ELASTICSEARCH_CLIENT');
   providers: [
     {
       provide: REDIS_CLIENT,
-      useFactory: () =>
-        new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        new Redis(config.getOrThrow<string>('REDIS_URL'), {
           lazyConnect: true,
           maxRetriesPerRequest: 1,
         }),
     },
     {
       provide: ELASTICSEARCH_CLIENT,
-      useFactory: () =>
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
         new ElasticsearchClient({
-          node: process.env.ELASTICSEARCH_URL ?? 'http://localhost:9200',
+          node: config.getOrThrow<string>('ELASTICSEARCH_URL'),
         }),
     },
   ],

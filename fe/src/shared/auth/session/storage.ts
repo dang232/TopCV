@@ -27,18 +27,18 @@ function coerceSession(raw: unknown): AuthSession | null {
 
 export function readSessionFromLocalStorage(): AuthSession | null {
   if (typeof window === 'undefined') return null;
-  const raw = safeParseJson(window.localStorage.getItem(STORAGE_KEY));
+  const raw = safeParseJson(window.sessionStorage.getItem(STORAGE_KEY));
   return coerceSession(raw);
 }
 
 export function writeSessionToLocalStorage(session: AuthSession): void {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 }
 
 export function clearSessionLocalStorage(): void {
   if (typeof window === 'undefined') return;
-  window.localStorage.removeItem(STORAGE_KEY);
+  window.sessionStorage.removeItem(STORAGE_KEY);
 }
 
 export function getSessionStorageKey(): string {

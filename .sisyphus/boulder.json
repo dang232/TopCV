@@ -1,12 +1,63 @@
 {
-  "active_plan": "C:\\Users\\Admin\\Desktop\\TopCV\\.sisyphus\\plans\\dynamic_form_builder_integration_plan.md",
-  "started_at": "2026-04-30T06:39:04.771Z",
+  "active_plan": "C:\\Users\\dangq\\OneDrive\\Máy tính\\TopCV\\.sisyphus\\plans\\api-lifecycle-envelope-fix.md",
+  "started_at": "2026-05-07T16:24:03.223Z",
   "session_ids": [
-    "ses_222f326dfffePJUvNbg3uiRe1p"
+    "ses_1fd64ac2cffeiXnQUZXk4Yi10V",
+    "ses_1fc664ae4ffeO1NXx2YtoLDMq4",
+    "ses_1fc664a24ffeRPu41bMtaIqPZU"
   ],
   "session_origins": {
-    "ses_222f326dfffePJUvNbg3uiRe1p": "direct"
+    "ses_1fd64ac2cffeiXnQUZXk4Yi10V": "direct",
+    "ses_1fc664ae4ffeO1NXx2YtoLDMq4": "appended",
+    "ses_1fc664a24ffeRPu41bMtaIqPZU": "appended"
   },
-  "plan_name": "dynamic_form_builder_integration_plan",
-  "agent": "atlas"
+  "plan_name": "api-lifecycle-envelope-fix",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Fix Backend HTTP Lifecycle And Success Envelope",
+      "session_id": "ses_1fcbd0d24ffeBW8H1diTM19y8K",
+      "agent": "Sisyphus-Junior",
+      "category": "business-logic",
+      "updated_at": "2026-05-07T16:27:45.681Z"
+    },
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "Add Auth Refresh And Request Lifecycle Tests",
+      "session_id": "ses_1fcb6f1faffeLbTpQZ2K7uNTGR",
+      "agent": "Sisyphus-Junior",
+      "category": "business-logic",
+      "updated_at": "2026-05-07T16:35:53.726Z"
+    },
+    "todo:4": {
+      "task_key": "todo:4",
+      "task_label": "4",
+      "task_title": "Verify Lifecycle And Report",
+      "session_id": "ses_1fcb30126ffe1r7oUfzXsyZYEB",
+      "agent": "Sisyphus-Junior",
+      "category": "general",
+      "updated_at": "2026-05-07T16:41:59.347Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "Lifecycle Compliance Audit — oracle",
+      "session_id": "ses_1fcab5383ffeGWzhzQa80k4qht",
+      "agent": "oracle",
+      "category": "",
+      "updated_at": "2026-05-07T16:46:29.059Z"
+    },
+    "final-wave:f4": {
+      "task_key": "final-wave:f4",
+      "task_label": "F4",
+      "task_title": "Scope Fidelity Check — deep",
+      "session_id": "ses_1fca8fce0ffe7GEzLpDoF4MvbB",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-07T16:50:04.001Z"
+    }
+  }
 }
